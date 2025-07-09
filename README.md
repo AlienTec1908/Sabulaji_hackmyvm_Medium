@@ -9,7 +9,7 @@
 *   **Schwierigkeit:** Medium
 *   **Autor der VM:** DarkSpirit
 *   **Datum des Writeups:** 25. Juni 2025
-*   **Original-Writeup:** https://alientec1908.github.io/Sabulaji_HackMyVM_Medium/
+*   **Original-Writeup:** https://alientec1908.github.io/Sabulaji_hackmyvm_Medium/
 *   **Autor:** Ben C.
 
 ---
